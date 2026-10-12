@@ -437,16 +437,16 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
               </div></div>
             <div class="grp"><div class="grp-h">Cleaning</div>
               <div class="plan-in c3">
-                <label title="Area one robot cleans per minute. 1.01 is from actual Queen of Oak Bay cleans: 0.988 min/m² per bot, the average of full-hull cleans 250810 (960 min) and 260831 (720 min) with 4 robots on 3,400 m². It includes access, driving on and off and battery-swap overhead.">Rate, m²/min per robot<input id="pRate" type="number" min="0.1" max="30" step="0.01" value="1.01"></label>
+                <label title="Area one robot cleans per minute. Starts at 5. For comparison, actual Queen of Oak Bay cleans averaged 1.01 (0.988 min/m² per bot, including access, driving on and off and battery-swap overhead).">Rate, m²/min per robot<input id="pRate" type="number" min="0.1" max="30" step="0.01" value="5"></label>
                 <label title="Spacing between cleaning lanes on the track">Lane spacing, m<input id="simLane" type="number" min="0.1" max="1" step="0.05" value="0.35"></label>
                 <label title="Contingency added to the cleaning time">Margin, %<input id="pCont" type="number" min="0" max="100" step="5" value="10"></label>
               </div>
               <p class="plan-ref" id="pRef"></p></div>
             <div class="grp"><div class="grp-h">Site times, minutes</div>
               <div class="plan-in c3">
-                <label title="Laptops, case unpack, lights, robot setup">Setup<input id="pSetup" type="number" min="0" max="600" step="5" value="20"></label>
-                <label>Pack-up<input id="pPack" type="number" min="0" max="600" step="5" value="20"></label>
-                <label title="Recover the robot, move to the next deployment point and relaunch">Launch<input id="pRelaunch" type="number" min="0" max="240" step="1" value="5"></label>
+                <label title="Laptops, case unpack, lights, robot setup">Setup<input id="pSetup" type="number" min="0" max="600" step="5" value="40"></label>
+                <label>Pack-up<input id="pPack" type="number" min="0" max="600" step="5" value="40"></label>
+                <label title="Start the Seawolf system, run a system test and deploy the robot into the water. Happens at the start of cleaning and after every battery swap (and if a robot has to move to another deployment point)">Launch<input id="pRelaunch" type="number" min="0" max="240" step="1" value="5"></label>
               </div>
               <div class="plan-chk">
                 <label><input type="checkbox" id="pStar" checked>Starlink (+15 min)</label>
@@ -459,7 +459,14 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
                 <label title="Grepow Travel or Maxamp at 3A">Charge, min<input id="pCharge" type="number" min="0" max="600" step="5" value="70"></label>
                 <label title="Robot speed on its launch and return runs">Transit, kn<input id="simSpd" type="number" min="0.1" max="6" step="0.1" value="1"></label>
               </div></div>
-            <p class="plan-note">Rates, setup, pack-up, Starlink, charging lines, battery change and charge times are from the Cleaning Time Calculator in Notion.</p>
+            <div class="grp"><div class="grp-h">Inspection photos</div>
+              <div class="plan-in c3">
+                <label title="Time to take one inspection photo">Per photo, min<input id="pPhoto" type="number" min="0" max="30" step="0.5" value="1"></label>
+                <label title="Hull areas in the mission report's quantitative assessment table. The mono hull table has 8: port and starboard vertical sides at the 1 m and 2 m belts, keel, block marks, bow and stern">Hull areas<input id="pAreas" type="number" min="0" max="60" step="1" value="8"></label>
+                <label title="Niche items noted for this vessel in the quantitative assessment table. The template lists 13: propeller and shaft, rudder and shaft, bow thruster, sea chest gratings port and starboard, stabiliser fins port and starboard, bilge keels port and starboard, anodes, sounders and instruments, transducers, valves">Niche items<input id="pNiche" type="number" min="0" max="60" step="1" value="13"></label>
+              </div>
+              <p class="plan-ref" id="pPhotoRef"></p></div>
+            <p class="plan-note">Rates, setup, pack-up, Starlink, charging lines, battery change and charge times are from the Cleaning Time Calculator in Notion. Photo counts follow the quantitative assessment table in the Mission Report template.</p>
           </div>
           <div class="step">
             <div class="step-h"><span class="step-n">4</span>Plan</div>
@@ -1697,26 +1704,29 @@ function sideTrack(cfg,lane){
     for(let i=0;i<=n;i++){ const q=surfW(a+(b-a)*i/n,h,side,0.03); pts.push(q.p); nrm.push(q.n); }
     prevH=h; inc=!inc; lanes++; }
   return {pts,nrm,lanes,transitN}; }
-function nicheTrack(cfg,lane){
+function nicheTrack(cfg,lane,opts){
   // rudder and propeller: down the side at the deployment point, aft along the hull, round outside the propeller tips,
   // then the rudder's two faces (lanes at constant depth wrapping both edges) or each propeller blade face (root to tip)
   const ds=dsOf(cfg.ds), side=ds.s, dsx=(ds.x0+ds.x1)/2, pts=[], nrm=[], top=draught/VS.sy, hA=Math.min(5.5,top-0.4);
   const push=(x,h,z,n)=>{ pts.push(W3(x,h,z)); nrm.push(n); }, outN=WN(new V3(0,0,side));
-  railStart(pts,nrm,dsx,side);
-  for(let h=D-0.4; h>hA; h-=0.5/VS.sy){ const q=surfW(dsx,h,side,0.03); pts.push(q.p); nrm.push(q.n); }
-  for(let x=dsx; x>9.5; x-=1/VS.sx){ const q=surfW(x,hA,side,0.03); pts.push(q.p); nrm.push(q.n); }
-  push(8.5,hA,side*3.9,outN); push(3.4,hA,side*3.9,outN);
+  if(opts&&opts.from){ // carrying straight on from the rudder: no recovery, just round to the propeller
+    const zs=Math.sign(opts.from.p.z)||-side, nS=WN(new V3(0,0,zs)); pts.push(opts.from.p.clone()); nrm.push(opts.from.n.clone()); push(3.4,hA,zs*3.9,nS); }
+  else { railStart(pts,nrm,dsx,side);
+    for(let h=D-0.4; h>hA; h-=0.5/VS.sy){ const q=surfW(dsx,h,side,0.03); pts.push(q.p); nrm.push(q.n); }
+    for(let x=dsx; x>9.5; x-=1/VS.sx){ const q=surfW(x,hA,side,0.03); pts.push(q.p); nrm.push(q.n); }
+    push(8.5,hA,side*3.9,outN); push(3.4,hA,side*3.9,outN); }
   let lanes=0;
   if(cfg.part==='rudder'){
     const hTop=Math.min(R_TOP-0.3,top-0.3); if(hTop<=R_BOT+0.3) return {pts,nrm,lanes:0,transitN:pts.length};
     push(R_LE+0.4,hTop,side*0.7,outN);
     const transitN=pts.length, NP=18, xcs=[]; for(let i=0;i<=NP;i++) xcs.push((1-Math.cos(Math.PI*i/NP))/2);
-    let s0=side;
-    for(let h=hTop; h>=R_BOT+0.3; h-=lane/VS.sy){
-      const n0=WN(new V3(0,0,s0)), n1=WN(new V3(0,0,-s0));
-      for(let i=0;i<=NP;i++){ const xc=xcs[i]; push(R_LE-xc*R_C,h,s0*(naca(xc)*R_C+0.03),n0); }          // leading to trailing edge
-      for(let i=NP;i>=0;i--){ const xc=xcs[i]; push(R_LE-xc*R_C,h,-s0*(naca(xc)*R_C+0.03),n1); }        // round the trailing edge and back
-      s0=-s0; lanes++; }
+    const hs=[]; for(let h=hTop; h>=R_BOT+0.3; h-=lane/VS.sy) hs.push(h);
+    const faceLane=(sd,h,toTE)=>{ const n=WN(new V3(0,0,sd)); for(let i=0;i<=NP;i++){ const xc=toTE?xcs[i]:xcs[NP-i]; push(R_LE-xc*R_C,h,sd*(naca(xc)*R_C+0.03),n); } };
+    hs.forEach((h,i)=>faceLane(side,h,i%2===0));                       // starboard face first, top to bottom
+    const atTE=(hs.length-1)%2===0, xe=atTE?R_LE-R_C-0.05:R_LE+0.05;
+    push(xe,Math.max(R_BOT-0.05,hs[hs.length-1]-0.4),0,WN(new V3(0,-1,0)));          // round the bottom edge
+    for(let j=0;j<hs.length;j++) faceLane(-side,hs[hs.length-1-j],atTE?j%2===1:j%2===0);   // then the other face, bottom to top
+    lanes=hs.length*2;
     return {pts,nrm,lanes,transitN}; }
   // propeller: radial passes from root to tip and back across each face of every blade, following the blade's
   // pitched and skewed surface (same shape as the model's blades)
@@ -1747,7 +1757,7 @@ function bottomTrack(cfg,lane){
     for(let i=0;i<=n;i++){ pts.push(under(x,zA+(zB-zA)*i/n)); nrm.push(down); }
     s0=-s0; lanes++; }
   return {pts,nrm,lanes,transitN}; }
-function tetherFixed(run,dsKey){ const ds=dsOf(dsKey||run.cfg.ds), side=ds.s, dsx=(ds.x0+ds.x1)/2, path=[];
+function tetherFixed(run,dsKey){ const ds=dsOf(dsKey||run.dsKey||run.cfg.ds), side=ds.s, dsx=(ds.x0+ds.x1)/2, path=[];
   path.push(W3(dsx-0.4/VS.sx,D+0.15/VS.sy,ds.z0+side*0.2/VS.sz));    // paid out at the deployment point
   const zOut=side*(BH+0.35/VS.sz);                                   // just outboard of the widest part of the hull
   path.railIdx=path.length; if(!dsKey) run.railIdx=path.length;
@@ -1767,10 +1777,12 @@ function hullContact(pts,side){ const flags=new Uint8Array(pts.length), clr=0.06
   return flags; }
 // length of tether pulled straight from A to B, lying on the hull wherever the straight line would cut through it
 function drapedLen(A,B,side,n){ const pts=[]; for(let i=0;i<=n;i++) pts.push(A.clone().lerp(B,i/n)); hullContact(pts,side); return pathLen(pts); }
-const runSide=r=>dsOf(r.cfg.ds).s;
+const runSide=r=>dsOf(r.dsKey||r.cfg.ds).s;
 function buildRun(key){
-  const cfg=SIMZ[key], kind=cfg.kind, t=kind==='bot'?bottomTrack(cfg,SIM.lane):kind==='niche'?nicheTrack(cfg,SIM.lane):sideTrack(cfg,SIM.lane);
-  const r={key,cfg,kind,pts:t.pts,nrm:t.nrm,lanes:t.lanes,transitN:t.transitN,s:0,tNow:0,slack:0};
+  const cfg=SIMZ[key], kind=cfg.kind, chained=key==='N:prop'&&simKeys().includes('N:rudder');
+  let opts=null; if(chained){ const rt=nicheTrack(SIMZ['N:rudder'],SIM.lane), n=rt.pts.length-1; opts={from:{p:rt.pts[n],n:rt.nrm[n]}}; }
+  const t=kind==='bot'?bottomTrack(cfg,SIM.lane):kind==='niche'?nicheTrack(cfg,SIM.lane,opts):sideTrack(cfg,SIM.lane);
+  const r={key,cfg,kind,chained,dsKey:chained?SIMZ['N:rudder'].ds:cfg.ds,pts:t.pts,nrm:t.nrm,lanes:t.lanes,transitN:t.transitN,s:0,tNow:0,slack:0};
   r.fixed=tetherFixed(r); r.fixedLen=pathLen(r.fixed);
   if(cfg.alt){ const ds=dsOf(cfg.alt), side=ds.s, dsx=(ds.x0+ds.x1)/2, ap=[], an=[], tgt=t.pts[t.transitN]||t.pts[t.pts.length-1];
     railStart(ap,an,dsx,side);
@@ -1798,7 +1810,8 @@ function syncDoneLines(r,n){ r.doneLines=r.doneLines||[r.done];
     const ln=new THREE.Line(g,r.done.material); ln.renderOrder=8; simGroup.add(ln); r.doneLines.push(ln); }
   while(r.doneLines.length>n){ const ln=r.doneLines.pop(); simGroup.remove(ln); ln.geometry.dispose(); } }
 function setRuns(keys){
-  const keep=[]; for(const r of SIM.runs){ if(keys.includes(r.key)) keep.push(r); else disposeRun(r); }
+  const chainNow=keys.includes('N:rudder')&&keys.includes('N:prop');
+  const keep=[]; for(const r of SIM.runs){ if(keys.includes(r.key)&&!(r.key==='N:prop'&&!!r.chained!==chainNow)) keep.push(r); else disposeRun(r); }
   const added=[]; for(const k of keys){ if(!keep.find(r=>r.key===k)){ const r=buildRun(k); keep.push(r); added.push(r); } }
   SIM.runs=SIM_ORDER.map(k=>keep.find(r=>r.key===k)).filter(Boolean);
   if(!SIM.runs.length) SIM.playing=false;
@@ -1877,7 +1890,7 @@ function botAt(j,T){ const segs=SIM.tl.bots[j]; if(!segs||!segs.length) return n
   let last=null;
   for(const g of segs){ if(T<g.t0) break; last=g; if(T<=g.t1){ const r=runByKey(g.key); if(!r) return null;
     const pts=partsOf(g.key), pt=pts[g.part||0]||pts[0], lab=r.cfg.short+(pts.length>1?` ${(g.part||0)+1}/${pts.length}`:'');
-    const alt=!!(pt.alt&&r.alt), s0=alt?r.alt.len:r.cum[Math.max(0,r.transitN-1)], dpN=(alt?r.alt.ds:r.cfg.ds).slice(2);   // route from the part's deployment point
+    const alt=!!(pt.alt&&r.alt), s0=alt?r.alt.len:r.cum[Math.max(0,r.transitN-1)], dpN=(alt?r.alt.ds:(r.dsKey||r.cfg.ds)).slice(2);   // route from the part's deployment point
     if(g.k==='clean'){ const q=g.f0+(g.f1-g.f0)*(T-g.t0)/Math.max(1e-9,g.t1-g.t0); return {r,alt,s:s0+partPos(pt,q)*r.cleanLen,status:`Cleaning ${lab}`,busy:true}; }
     if(g.k==='launch'){ const sT=s0+partPos(pt,g.from)*r.cleanLen, tr=g.t1-g.t0-g.relaunch;
       if(T<g.t0+g.relaunch) return {r,alt,s:0,status:g.after?`Relaunching Seawolf and robot, ${lab}`:`Launching at DP${dpN} for ${lab}`,busy:true};
@@ -1935,12 +1948,12 @@ function updateSimUI(){
     `<div class="dash-h">Robots now (${nb})</div><div class="zrows">`+
     SIM.bots.map((b,j)=>{ const s=b.state; if(!s) return `<div class="zrow"><div class="zrow-top"><b>R${j+1}</b><span>Not needed for these zones</span></div></div>`;
       return `<div class="zrow"><div class="zrow-top"><b><i style="background:${s.r.color}"></i>R${j+1}</b><span>${s.status}</span></div>`+
-        (s.busy?`<div class="zrow-meta"><span class="t">Tether ${Math.round(b.tNow||0)} of ${s.r.paidOut} m paid out at DP${(s.alt&&s.r.alt?s.r.alt.ds:s.r.cfg.ds).slice(2)}</span><span>${Math.round(b.slack||0)} m slack</span></div>`:'')+`</div>`; }).join('')+
+        (s.busy?`<div class="zrow-meta"><span class="t">Tether ${Math.round(b.tNow||0)} of ${s.r.paidOut} m paid out at DP${(s.alt&&s.r.alt?s.r.alt.ds:(s.r.dsKey||s.r.cfg.ds)).slice(2)}</span><span>${Math.round(b.slack||0)} m slack</span></div>`:'')+`</div>`; }).join('')+
     `</div>`+
     `<div class="dash-h">Zones</div><div class="zrows">`+
     R.map(r=>{ const f=r.frac||0, warn=r.maxT>TETHER;
       const nk=partsOf(r.key).length;
-      return `<div class="zrow${warn?' warn':''}"><div class="zrow-top"><b><i style="background:${r.color}"></i>${r.cfg.short} <em>DP${r.cfg.ds.slice(2)}${r.cfg.alt?' and '+r.cfg.alt.slice(2):''}${nk>1?`, ${nk} robots`:''}</em></b><span>${f>=0.999?'Done':Math.round(f*100)+'%'}</span></div>`+
+      return `<div class="zrow${warn?' warn':''}"><div class="zrow-top"><b><i style="background:${r.color}"></i>${r.cfg.short} <em>DP${(r.dsKey||r.cfg.ds).slice(2)}${r.cfg.alt?' and '+r.cfg.alt.slice(2):''}${nk>1?`, ${nk} robots`:''}</em></b><span>${f>=0.999?'Done':Math.round(f*100)+'%'}</span></div>`+
         `<div class="dash-bar"><i style="width:${(f*100).toFixed(1)}%;background:${r.color}"></i></div>`+
         `<div class="zrow-meta"><span class="t">${r.paidOut} m tether paid out${warn?' (beyond 125 m)':''}</span><span>${fmtA(r.cleanLen*SIM.lane)} m²</span></div></div>`; }).join('')+
     `</div>`+
@@ -1952,65 +1965,75 @@ function updateSimUI(){
 // Each window: crew setup, then the robots work the ticked zones in parallel (longest first), then pack-down.
 // Work that doesn't fit carries over to the next window, which needs its own setup, pack-down and relaunch.
 function planInputs(){ const v=(id,d,lo,hi)=>{ const x=parseFloat($(id).value); return clamp(isNaN(x)?d:x,lo,hi); };
-  const star=$('pStar').checked, chg=$('pChg').checked, su=v('pSetup',20,0,600), pk=v('pPack',20,0,600);
+  const star=$('pStar').checked, chg=$('pChg').checked, su=v('pSetup',40,0,600), pk=v('pPack',40,0,600);
   // Starlink's 15 min covers setup and pack-up together, so it's split between them; charging lines add 15 min to setup
-  return {perDp:Math.round(v('pPerDp',2,1,8)), chargers:Math.round(v('pChargers',2,0,12)), rate:v('pRate',1.01,0.1,30), avail:Math.round(v('pWins',1,1,60)), robots:Math.round(v('pRobots',4,1,10)), win:v('pWin',8,1,48), cont:v('pCont',10,0,100)/100, relaunch:v('pRelaunch',5,0,240)/60,
+  return {photo:v('pPhoto',1,0,30)/60, areas:Math.round(v('pAreas',8,0,60)), niche:Math.round(v('pNiche',13,0,60)), perDp:Math.round(v('pPerDp',2,1,8)), chargers:Math.round(v('pChargers',2,0,12)), rate:v('pRate',5,0.1,30), avail:Math.round(v('pWins',1,1,60)), robots:Math.round(v('pRobots',4,1,10)), win:v('pWin',8,1,48), cont:v('pCont',10,0,100)/100, relaunch:v('pRelaunch',5,0,240)/60,
     batt:v('pBatt',60,15,1440)/60, swap:v('pSwap',10,0,120)/60, charge:v('pCharge',70,0,600)/60, star, chg,
     setup:(su+(star?7.5:0)+(chg?15:0))/60, pack:(pk+(star?7.5:0))/60}; }
 // try a few ways of splitting the work between robots and keep the one that finishes soonest
-function planSchedule(P){ let best=null;
-  for(const f of [1,0.9,0.8,0.7,0.6,0.5]){ const S=planScheduleCore(P,f); if(S.error) return S;
-    const tot=S.windows.reduce((a,w)=>a+w.onsite,0); if(!best||tot<best.tot-1/60){ best=S; best.tot=tot; } }
-  return best; }
-function planScheduleCore(P,shareF){
+function planSchedule(P){ return planScheduleCore(P); }
+function planScheduleCore(P){
   const usable=P.win-P.setup-P.pack; if(usable<=0) return {error:'The window is shorter than setup plus pack-down.'};
   const base=r=>r.cleanLen*SIM.lane/P.rate/60;                       // robot-hours for the zone: its area at one robot's clean rate
-  // share the work: any zone bigger than one robot's fair share (total work / robots) is split into equal parts of its
-  // track, and neighbouring robots work towards each other (top lane down, bottom lane up)
-  const zones=SIM.runs.map(r=>({r,work:base(r)*(1+P.cont),k:1})), share=zones.reduce((a,z)=>a+z.work,0)/Math.max(1,P.robots);
-  for(const z of zones) z.k=z.r.kind==='niche'?1:Math.max(1,Math.ceil(z.work/(share*shareF)-1e-6));   // niche areas stay with one robot
+  // one robot per zone; only when there are more robots than zones do the spare robots share the biggest zones (never the
+  // niche areas), each zone's track split into equal parts that neighbouring robots work towards each other
+  // the flat bottom, cleaned last, is always shared by two robots (one from each side's deployment point)
+  const zones=SIM.runs.map(r=>({r,work:base(r)*(1+P.cont),k:r.kind==='bot'&&P.robots>=2?2:1}));
+  for(let extra=P.robots-zones.reduce((a,z)=>a+z.k,0); extra>0; extra--){ const cand=zones.filter(z=>z.r.kind!=='niche'); if(!cand.length) break;
+    const z=cand.reduce((a,b)=>a.work/a.k>=b.work/b.k?a:b); z.k++; }
+  const photos=2*(P.areas+P.niche), photoH=photos*P.photo, allW=zones.reduce((a,z)=>a+z.work,0)||1;
+  for(const z of zones) z.work+=photoH*z.work/allW;                  // pre- and post-clean inspection photos, shared by zone size
   const tasks=[], parts={};
   for(const z of zones){ const r=z.r, iS=Math.max(0,r.transitN-1), s0=r.cum[iS], t0=s0/SIM.speed/3600, p0=r.pts[iS]; parts[r.key]=[];
     for(let i=0;i<z.k;i++){ const a=i/z.k, b=(i+1)/z.k, dir=i%2===0?1:-1, sp=runPose(r,s0+(dir>0?a:b)*r.cleanLen).p;
       const alt=!!(r.cfg.alt&&i%2===1); parts[r.key].push({a,b,dir,alt});
-      tasks.push({key:r.key, dp:alt?r.cfg.alt:r.cfg.ds, part:i, k:z.k, a, b, dir, name:r.cfg.short+(z.k>1?` ${i+1}/${z.k}`:''), color:r.color, work:z.work/z.k,
+      tasks.push({key:r.key, dp:alt?r.cfg.alt:(r.dsKey||r.cfg.ds), part:i, k:z.k, a, b, dir, name:r.cfg.short+(z.k>1?` ${i+1}/${z.k}`:''), color:r.color, work:z.work/z.k,
         transit:t0+p0.distanceTo(sp)/SIM.speed/3600}); } }
-  tasks.sort((x,y)=>y.work-x.work); tasks.forEach(t=>t.left=t.work);
+  // order: bow, stern and niche areas first, then the vertical side faces, then the flat bottom
+  const pri=k=>/^(bow|stern|N:)/.test(k)?0:(/^B:/.test(k)?2:1);
+  tasks.sort((x,y)=>pri(x.key)-pri(y.key)||SIM_ORDER.indexOf(x.key)-SIM_ORDER.indexOf(y.key)||x.part-y.part); tasks.forEach(t=>t.left=t.work);
+  const chain=tasks.some(t=>t.key==='N:rudder')&&tasks.some(t=>t.key==='N:prop'); let rudderDone=!chain;
   const queue=tasks.slice(), windows=[];
   while(queue.length){
     if(windows.length>=60) return {error:'More than 60 windows needed: lengthen the window or add robots.'};
     const robots=Array.from({length:P.robots},()=>({t:0,run:0,seg:[],done:false})), carry=[], occ={}; let progress=false;
     const busyAt=(dp,t)=>(occ[dp]||[]).filter(iv=>iv[0]<=t+1e-9&&iv[1]>t+1e-9).length;     // robots working from a deployment point
-    for(;;){ const free=robots.filter(r=>!r.done&&r.t<usable-1e-6); if(!free.length||!queue.length) break;
-      const rb=free.reduce((a,b)=>a.t<=b.t?a:b);
-      const qi=queue.findIndex(tk=>busyAt(tk.dp,rb.t)<P.perDp);
-      if(qi<0){ // every deployment point with work left is full: wait for the next robot to come off one
-        const dps=new Set(queue.map(tk=>tk.dp)), ends=[]; dps.forEach(dp=>(occ[dp]||[]).forEach(iv=>{ if(iv[1]>rb.t+1e-9) ends.push(iv[1]); }));
-        if(!ends.length){ rb.done=true; continue; } rb.t=Math.min(...ends); if(rb.t>=usable-1e-6) rb.done=true; continue; }
-      const L=P.relaunch+queue[qi].transit;
-      if(rb.t+L>=usable-1e-6){ rb.done=true; continue; }
-      const task=queue.splice(qi,1)[0], tStart=rb.t;
+    // one robot works one task: launch (rlMin of hands-on launch plus the run out), clean, battery swaps with relaunches
+    const runTask=(rb,task,rlMin,extraTr)=>{
+      if(rb.t+rlMin+task.transit>=usable-1e-6){ carry.push(task); rb.done=true; return null; }
       if(P.batt<=2*task.transit+0.05) return {error:`Battery run time is too short for the robot to reach ${task.name} and get back.`};
-      rb.seg.push({k:'launch',a:rb.t,b:rb.t+L,name:task.name,key:task.key,part:task.part,from:(task.work-task.left)/task.work,relaunch:P.relaunch}); rb.t+=L; rb.run+=task.transit;
+      const tStart=rb.t, L=rlMin+task.transit+(extraTr||0);
+      rb.seg.push({k:'launch',a:rb.t,b:rb.t+L,name:task.name,key:task.key,part:task.part,from:(task.work-task.left)/task.work,relaunch:rlMin}); rb.t+=L; rb.run+=task.transit;
       while(task.left>1e-6&&rb.t<usable-1e-6){
-        // keep enough charge for the run back to the deployment point
-        const chunk=Math.min(task.left,usable-rb.t,Math.max(0,P.batt-rb.run-task.transit));
+        const chunk=Math.min(task.left,usable-rb.t,Math.max(0,P.batt-rb.run-task.transit));   // keep charge for the run back
         if(chunk>1e-6){ const f0=(task.work-task.left)/task.work; rb.t+=chunk; task.left-=chunk; rb.run+=chunk; progress=true;
           rb.seg.push({k:'clean',a:rb.t-chunk,b:rb.t,name:task.name,color:task.color,key:task.key,part:task.part,f0,f1:(task.work-task.left)/task.work}); }
         if(task.left>1e-6&&P.batt-rb.run-task.transit<=1e-6){
-          // battery change: robot back to the deployment point and out of the water, swap, relaunch Seawolf and the robot, run back to work
           const sw=task.transit+P.swap, rl=P.relaunch+task.transit;
           if(rb.t+sw+rl>=usable-1e-6){ rb.t=usable; break; }
           const fr=(task.work-task.left)/task.work;
           rb.seg.push({k:'swap',a:rb.t,b:rb.t+sw,name:task.name,key:task.key,part:task.part,frac:fr,transit:task.transit}); rb.t+=sw;
           rb.seg.push({k:'launch',a:rb.t,b:rb.t+rl,name:task.name,key:task.key,part:task.part,from:fr,relaunch:P.relaunch,after:true}); rb.t+=rl; rb.run=task.transit; }
         else if(chunk<=1e-6) break; }
-      (occ[task.dp]=occ[task.dp]||[]).push([tStart,rb.t]);
-      if(task.left>1e-6){ carry.push(task); rb.done=true; } }          // unfinished: carried to the next window
+      (occ[task.dp]=occ[task.dp]||[]).push([tStart,rb.t]); rb.dp=task.dp; rb.lastTr=task.transit;
+      if(task.left>1e-6){ carry.push(task); rb.done=true; }
+      return null; };
+    for(;;){ const free=robots.filter(r=>!r.done&&r.t<usable-1e-6); if(!free.length||!queue.length) break;
+      const rb=free.reduce((a,b)=>a.t<=b.t?a:b);
+      const qi=queue.findIndex(tk=>busyAt(tk.dp,rb.t)<P.perDp&&!(tk.key==='N:prop'&&!rudderDone));   // the propeller waits for the rudder robot
+      if(qi<0){ // every deployment point with work left is full: wait for the next robot to come off one
+        const dps=new Set(queue.map(tk=>tk.dp)), ends=[]; dps.forEach(dp=>(occ[dp]||[]).forEach(iv=>{ if(iv[1]>rb.t+1e-9) ends.push(iv[1]); }));
+        if(!ends.length){ rb.done=true; continue; } rb.t=Math.min(...ends); if(rb.t>=usable-1e-6) rb.done=true; continue; }
+      if(rb.t+P.relaunch+queue[qi].transit>=usable-1e-6){ rb.done=true; continue; }
+      // a launch (Seawolf start, system test, deploy) at the start of cleaning and if the robot moves to another deployment point;
+      // the next zone from the same deployment point is just a drive under water: back past the deployment point and out
+      const task=queue.splice(qi,1)[0], rl=(!rb.seg.length||rb.dp!==task.dp)?P.relaunch:0, err=runTask(rb,task,rl,rl?0:(rb.lastTr||0)); if(err) return err;
+      if(task.key==='N:rudder'&&task.left<=1e-6){ rudderDone=true;                // same robot carries straight on to the propeller
+        const pi=queue.findIndex(tk=>tk.key==='N:prop'); if(pi>=0&&!rb.done){ const e2=runTask(rb,queue.splice(pi,1)[0],0); if(e2) return e2; } } }
     queue.unshift(...carry);
     if(!progress) return {error:'Nothing fits in a window after setup, pack-down and the first launch: lengthen the window.'};
     const span=Math.max(0,...robots.map(r=>r.t)); windows.push({robots,span,onsite:P.setup+span+P.pack}); }
-  return {windows,tasks,usable,parts}; }
+  return {windows,tasks,usable,parts,photos,photoH}; }
 const fmtH=h=>{ const m=Math.round(h*60), hh=Math.floor(m/60), mm=m%60; return hh?`${hh}h ${String(mm).padStart(2,'0')}m`:`${mm} min`; };
 let planSig='';
 function updatePlan(force){
@@ -2023,8 +2046,9 @@ function updatePlan(force){
   const S=planSchedule(P); if(S.error){ out.innerHTML=`<p class="calc-warn">${S.error}</p>`; SIM.tl=null; ensureBots(0); renderBatteries(null,P); return; }
   SIM.tl=buildTimeline(S,P); SIM.T=Math.min(SIM.T,SIM.tl.total); ensureBots(P.robots); applyTimeline(true); renderBatteries(S,P);
   { const cur={t:SIM.tl.total,n:S.windows.length}, pv=SIM.planLast; if(pv&&Math.abs(cur.t-pv.t)>1/120) SIM.planDelta={dt:cur.t-pv.t}; SIM.planLast=cur; }
-  const W=S.windows, onsite=W.reduce((a,w)=>a+w.onsite,0), clean=S.tasks.reduce((a,t)=>a+t.work,0), over=W.length*(P.setup+P.pack);
-  let nL=0,tL=0,nS=0,tS=0,rh=0,used=0,maxPerRobot=0,nRel=0,starting=0; for(const w of W) for(const r of w.robots){ rh+=r.t; let sw=0; for(const s of r.seg){ if(s.k==='launch'){ nL++; tL+=s.b-s.a; if(s.after) nRel++; } if(s.k==='swap'){ nS++; sw++; tS+=s.b-s.a; } }
+  const W=S.windows, onsite=W.reduce((a,w)=>a+w.onsite,0), clean=S.tasks.reduce((a,t)=>a+t.work,0)-S.photoH, over=W.length*(P.setup+P.pack);
+  $('pPhotoRef').textContent=`${S.photos} photos (pre and post of ${P.areas} hull areas and ${P.niche} niche items): ${fmtH(S.photoH)} of robot time, shared across the zones.`;
+  let nL=0,tL=0,nS=0,tS=0,rh=0,used=0,maxPerRobot=0,nRel=0,starting=0; for(const w of W) for(const r of w.robots){ rh+=r.t; let sw=0; for(const s of r.seg){ if(s.k==='launch'&&s.relaunch>0){ nL++; tL+=s.b-s.a; if(s.after) nRel++; } if(s.k==='swap'){ nS++; sw++; tS+=s.b-s.a; } }
     if(r.seg.length){ starting++; used+=1+sw; maxPerRobot=Math.max(maxPerRobot,1+sw); } }   // each robot starts each window with a full battery fitted
   const perRobot=P.chg?Math.min(maxPerRobot,1+Math.ceil(P.charge/P.batt)):maxPerRobot;   // with charging on site, enough to keep one charging while one runs
   const tile=(k,v,extra,cls)=>`<div class="tile${cls?' '+cls:''}"><div class="k">${k}</div><div class="v">${v}</div>${extra?`<div class="d">${extra}</div>`:''}</div>`;
@@ -2048,6 +2072,7 @@ function updatePlan(force){
     `<div class="dash-h">Breakdown</div><div class="tiles">`+
       tile('Rate',P.rate.toFixed(2)+'<small> m²/min</small>',`&amp; ${(P.rate/SIM.lane/60/0.514444).toFixed(2)} kn per robot; ${(P.rate*P.robots).toFixed(2)} m²/min with ${P.robots}`)+
       tile('Cleaning',fmtH(clean),`robot time +${Math.round(P.cont*100)}%`)+
+      tile('Photos',S.photos,`${fmtH(S.photoH)} pre and post clean`)+
       tile('Overhead',fmtH(over),`setup and pack-up, ${Math.round(over/onsite*100)}% of on site`)+
       tile('Launches',nL,`${fmtH(tL)}, ${nRel} after swaps`)+
       tile('Battery swaps',nS,fmtH(tS))+
@@ -2572,7 +2597,7 @@ $('simMult').addEventListener('change',e=>{ SIM.mult=+e.target.value; });
 $('simSpd').addEventListener('change',e=>{ if(SIM.runs.length) SIM.prev=simStats(); const kn=clamp(parseFloat(e.target.value)||1,0.1,6); e.target.value=kn; SIM.speed=kn*0.514444; updateSimUI(); });   // knots to m/s
 $('simLane').addEventListener('change',e=>{ if(SIM.runs.length) SIM.prev=simStats(); SIM.lane=clamp(parseFloat(e.target.value)||0.35,0.1,1); e.target.value=SIM.lane; rebuildSimKeep(); });
 $('simFollow').addEventListener('change',e=>{ SIM.follow=e.target.checked; });
-['pPerDp','pChargers','pRobots','pWins','pWin','pSetup','pPack','pRelaunch','pBatt','pSwap','pCharge','pCont'].forEach(id=>$(id).addEventListener('input',()=>updatePlan()));
+['pPhoto','pAreas','pNiche','pPerDp','pChargers','pRobots','pWins','pWin','pSetup','pPack','pRelaunch','pBatt','pSwap','pCharge','pCont'].forEach(id=>$(id).addEventListener('input',()=>updatePlan()));
 ['pStar','pChg'].forEach(id=>$(id).addEventListener('change',()=>updatePlan()));
 $('pRate').addEventListener('input',()=>updatePlan());
 updateSimUI();
