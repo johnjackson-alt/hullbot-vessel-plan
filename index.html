@@ -92,6 +92,16 @@ button{font:inherit;color:inherit;}
 
 /* ---------- stage ---------- */
 .stage{position:absolute;inset:0;overflow:hidden;min-width:0;background:linear-gradient(180deg,var(--bg-top),var(--bg-bot));}
+.stage.night{--bg-top:#0e1b2c;--bg-bot:#02060c;}
+.demo-cap{position:absolute;left:28px;bottom:30px;max-width:min(560px,70%);color:#fff;font:600 19px/1.35 'Inter Tight',Inter,sans-serif;letter-spacing:0.005em;
+  text-shadow:0 1px 3px rgba(0,0,0,0.55),0 0 18px rgba(0,0,0,0.35);opacity:0;transform:translateY(6px);transition:opacity .6s ease,transform .6s ease;pointer-events:none;z-index:6;}
+.demo-cap small{display:block;font:500 13px/1.4 Inter,sans-serif;opacity:0.85;margin-top:4px;}
+.demo-cap.show{opacity:1;transform:none;}
+.demo-stop{position:absolute;right:20px;bottom:24px;z-index:7;font:600 13px Inter,sans-serif;color:#fff;background:rgba(17,17,17,0.82);border:1px solid rgba(255,255,255,0.25);
+  border-radius:4px;padding:8px 14px;cursor:pointer;}
+.demo-stop:hover{background:#111;}
+.venv-demo{display:flex;gap:12px;align-items:center;margin-top:8px;} .venv-demo button{flex:none;}
+.views button[data-act="night"][aria-pressed="true"]{background:#0e1b2c;color:#fff;}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none;}
 .views{position:absolute;top:14px;right:14px;display:flex;gap:4px;padding:4px;background:var(--surface);border-radius:8px;box-shadow:var(--shadow);z-index:3;}
 .views button{border:0;background:none;padding:6px 11px;border-radius:5px;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;}
@@ -212,6 +222,7 @@ button{font:inherit;color:inherit;}
 .sb-row{display:flex;align-items:flex-end;gap:16px;margin-top:10px;}
 .sb-on{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding-bottom:6px;} .sb-on input{margin:0;accent-color:var(--accent);}
 .sb-depth{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--ink-soft);width:120px;}
+.sb-depth select{font:inherit;font-size:13.5px;color:var(--ink);background:var(--surface-2);border:1px solid var(--rule);border-radius:3px;padding:4px 6px;width:100%;}
 .sb-depth input{font:inherit;font-size:13.5px;color:var(--ink);background:var(--surface-2);border:1px solid var(--rule);border-radius:3px;padding:4px 6px;width:100%;}
 #sbUkc.warn{color:#d32f2f;font-weight:600;}
 .plan-in input{font:inherit;font-size:13.5px;color:var(--ink);background:var(--surface-2);border:1px solid var(--rule);border-radius:6px;padding:4px 6px;width:100%;min-width:0;}
@@ -236,6 +247,9 @@ button{font:inherit;color:inherit;}
 .vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;} .vgrid.two{grid-template-columns:1.4fr 1fr;}
 .vrow{display:flex;gap:8px;align-items:flex-end;} .vrow label{flex:1;}
 .vdlg [hidden]{display:none !important;}
+.venv{border:1px solid var(--rule);border-radius:4px;padding:8px 12px 10px;margin:0;} .venv legend{font-size:12px;color:var(--ink-soft);padding:0 4px;}
+.venv-row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;} .venv-row label{display:flex;flex-direction:column;gap:3px;font-size:12.5px;}
+.venv-row label.sb-on{flex-direction:row;align-items:center;padding-bottom:8px;} .venv-row input[type=number]{width:90px;}
 .vdlg button{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);border-radius:6px;padding:8px 14px;cursor:pointer;}
 .vdlg button.primary{background:var(--signal);border-color:var(--signal);color:var(--signal-ink);}
 .vbtns{display:flex;gap:8px;margin-top:4px;} .vbtns span{flex:1;}
@@ -429,6 +443,7 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
             <div class="sb-row">
               <label class="sb-on"><input type="checkbox" id="sbOn">Seafloor</label>
               <label class="sb-depth">Water depth, m<input id="sbDepth" type="number" min="1" max="300" step="1" value="16"></label>
+              <label class="sb-depth">Seabed<select id="sbType"><option value="mud">Mud or clay</option><option value="sand" selected>Sand</option><option value="rock">Rock or shell</option></select></label>
             </div>
             <p class="step-sum" id="sbUkc"></p>
           </div>
@@ -498,6 +513,7 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
               <button type="button" id="simReset">Reset</button>
               <label class="sim-mult">Speed<select id="simMult"><option value="1">Real time</option><option value="10">×10</option><option value="25">×25</option><option value="50">×50</option><option value="100">×100</option><option value="200">×200</option><option value="300">×300</option><option value="1000">×1000</option><option value="3000" selected>×3000</option><option value="10000">×10000</option></select></label>
               <label class="switch"><input type="checkbox" id="simFollow">Follow robot</label>
+              <label class="switch" id="simTrRow"><input type="checkbox" id="simHideTr">Hide track lines while running</label>
             </div>
             <div class="calc" id="simStat"></div>
           </div>
@@ -519,6 +535,7 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
     <div class="stage-title"><h1>Hullbot Vessel Plan</h1><p>LUDRICK, MR product tanker, 183 m by 32.2 m</p></div>
     <nav class="views" id="views" aria-label="Camera views">
       <button data-view="quarter" aria-pressed="true">3/4 below</button>
+      <button data-view="bowq" aria-pressed="false">Bow 3/4</button>
       <button data-view="port" aria-pressed="false">Port</button>
       <button data-view="stbd" aria-pressed="false">Starboard</button>
       <button data-view="bottom" aria-pressed="false">Bottom</button>
@@ -527,6 +544,8 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
       <button data-view="deck" aria-pressed="false">Deck plan</button>
       <button data-act="vessel" aria-pressed="false">Vessel</button>
     </nav>
+    <div class="demo-cap" id="demoCap" aria-live="polite"></div>
+    <button type="button" class="demo-stop" id="demoStop" hidden>Stop demo</button>
     <article class="card" id="card" hidden aria-live="polite">
       <div class="card-head">
         <span class="badge lg" id="cardBadge"></span>
@@ -574,6 +593,18 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
         </div>
         <p class="vnote small">Two symmetric hard-chine hulls with a V bottom, built from these particulars. The wetted surface is measured from the two hulls, so it reflects a catamaran rather than one wide hull. Hull 078's figures come from its specification sheet and general arrangement.</p>
       </div>
+      <fieldset class="venv"><legend>Conditions</legend>
+        <div class="venv-row">
+          <label>Light<select id="vLight"><option value="day">Day</option><option value="night">Night</option></select></label>
+          <label class="sb-on"><input type="checkbox" id="vSb">Seafloor</label>
+          <label>Water depth, m<input id="vSbD" type="number" min="1" max="300" step="1"></label>
+          <label class="sb-on"><input type="checkbox" id="vSlime">Biofilm</label>
+          <label>Level<select id="vSlimeL"><option value="0.45">Light</option><option value="0.75" selected>Medium</option><option value="0.95">Heavy</option></select></label>
+          <label>Seabed<select id="vSbT"><option value="mud">Mud or clay</option><option value="sand">Sand</option><option value="rock">Rock or shell</option></select></label>
+        </div>
+        <p class="vnote small">These apply straight away. Seafloor and depth are the same settings as in step 1, Vessel and draught.</p>
+        <div class="venv-demo"><button type="button" id="vDemo">Run demo</button><span class="vnote small">A cinematic run-through of four robots cleaning this vessel, from all four deployment points, by day and by night. Press Esc or click the view to stop.</span></div>
+      </fieldset>
       <div class="vbtns"><button type="button" id="vReset">Standard model</button><span></span><button type="button" id="vCancel">Cancel</button><button type="submit" class="primary">Apply</button></div>
     </form>
   </dialog>
@@ -679,7 +710,7 @@ const camera = new THREE.PerspectiveCamera(35,1,0.5,4000);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 Object.assign(controls,{enableDamping:true,dampingFactor:0.09,rotateSpeed:0.6,zoomSpeed:0.9,panSpeed:0.8,minDistance:3,maxDistance:1400,screenSpacePanning:true});
 
-scene.add(new THREE.HemisphereLight(0xffffff,0x5d6c78,0.78));
+const hemi=new THREE.HemisphereLight(0xffffff,0x5d6c78,0.78); scene.add(hemi); let NIGHT=false;
 const sun=new THREE.DirectionalLight(0xffffff,0.62); sun.position.set(80,160,110); scene.add(sun);
 const under=new THREE.DirectionalLight(0xd7ecff,0.42); under.position.set(-70,-120,-90); scene.add(under);
 const under2=new THREE.DirectionalLight(0xffffff,0.22); under2.position.set(90,-80,120); scene.add(under2);
@@ -771,7 +802,19 @@ const PAINT_TEX=(function(){
     dg.strokeStyle='rgba(255,255,255,0.08)'; dg.lineWidth=2+rand()*5; wrapLine(dg,x,y,x+len,y+(rand()-0.5)*20,D2,D2); }
   return {hullMap,hullBump,deckMap:texFrom(dc),deckBump:texFrom(ec)};
 })();
+// ---- biofilm: an optional slime layer on the hull below the waterline, patchy and thicker with depth; robots clean it off ----
+const SLIME={on:false,level:0.75,u:{uSlime:{value:0},uWL:{value:0}}};
+const SLIME_GLSL='float slimeH(vec3 p){ return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453); }\n'+
+  'float slimeN(vec3 p){ vec3 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(mix(slimeH(i),slimeH(i+vec3(1,0,0)),f.x),mix(slimeH(i+vec3(0,1,0)),slimeH(i+vec3(1,1,0)),f.x),f.y),'+
+  'mix(mix(slimeH(i+vec3(0,0,1)),slimeH(i+vec3(1,0,1)),f.x),mix(slimeH(i+vec3(0,1,1)),slimeH(i+vec3(1,1,1)),f.x),f.y),f.z); }\n';
+function slimeify(mat){ mat.onBeforeCompile=sh=>{ sh.uniforms.uSlime=SLIME.u.uSlime; sh.uniforms.uWL=SLIME.u.uWL;
+    sh.vertexShader='varying vec3 vSlimeW;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n  vSlimeW=(modelMatrix*vec4(transformed,1.0)).xyz;');
+    sh.fragmentShader='uniform float uSlime; uniform float uWL; varying vec3 vSlimeW;\n'+SLIME_GLSL+sh.fragmentShader.replace('#include <map_fragment>',
+      '#include <map_fragment>\n  if(uSlime>0.0){ float dd=uWL-vSlimeW.y; if(dd>0.0){ float n=slimeN(vSlimeW*0.6)*0.5+slimeN(vSlimeW*2.6)*0.3+slimeN(vSlimeW*9.0)*0.2;\n'+
+      '    float a=uSlime*smoothstep(0.0,0.6,dd)*clamp(0.45+0.75*n,0.0,1.0); vec3 sl=mix(vec3(0.31,0.34,0.18),vec3(0.15,0.2,0.1),n); diffuseColor.rgb=mix(diffuseColor.rgb,sl,a); } }'); };
+  mat.needsUpdate=true; }
 const hullMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.78,metalness:0.0,side:THREE.DoubleSide,map:PAINT_TEX.hullMap,bumpMap:PAINT_TEX.hullBump,bumpScale:0.035});
+slimeify(hullMat);
 const deckMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.86,metalness:0.0,side:THREE.DoubleSide,map:PAINT_TEX.deckMap,bumpMap:PAINT_TEX.deckBump,bumpScale:0.03});
 
 
@@ -1537,59 +1580,166 @@ const MAT={skin:new THREE.MeshStandardMaterial({color:0xc69a78,roughness:0.8}), 
   concrete:new THREE.MeshStandardMaterial({color:0x9a9fa2,roughness:0.95}), rope:new THREE.MeshStandardMaterial({color:0x2a5db0,roughness:0.7})};
 const TORUS=new THREE.TorusGeometry(0.34,0.07,8,28);
 function part(g,geo,mat,x,y,z,sx,sy,sz){ const m=new THREE.Mesh(geo,mat); m.position.set(x,y,z); m.scale.set(sx,sy,sz); g.add(m); return m; }
-function makePerson(vest){ const g=new THREE.Group();               // about 1.75 m tall, facing +x
-  for(const z of [-0.1,0.1]) part(g,PG.box,MAT.navy,0,0.43,z,0.17,0.86,0.15);
-  part(g,PG.box,vest,0,1.16,0,0.24,0.62,0.42);
-  for(const z of [-0.27,0.27]) part(g,PG.box,vest,0,1.12,z,0.12,0.6,0.11);
-  part(g,PG.sph,MAT.skin,0,1.58,0,0.21,0.23,0.2);
-  part(g,PG.hemi,MAT.helmet,0,1.63,0,0.27,0.22,0.26);
-  return g; }
-// Hullbot H6.3 at true size (46 cm long, 37.5 cm wide, 21.5 cm high), laid out from the TC/CC drawing:
-// central spine with the CC units front and rear, side pontoons carrying the vertical thrusters TC5-TC8 and the
-// pontoon lights, angled corner units TC1-TC4 with rotary corner brushes, and bristle strips front and rear.
-// Belly (hull side) at y=0, front +x, starboard +z. Parts are merged once and shared by every robot.
-const ROBOT=(function(){
-  const M={body:new THREE.MeshStandardMaterial({color:0xe4e7ea,roughness:0.45}), grey:new THREE.MeshStandardMaterial({color:0xa4abb1,roughness:0.5,metalness:0.2}),
-    dark:new THREE.MeshStandardMaterial({color:0x353a40,roughness:0.6}), black:new THREE.MeshStandardMaterial({color:0x15181b,roughness:0.6}),
-    bristle:new THREE.MeshStandardMaterial({color:0xd0d5d9,roughness:0.75}),
-    lampS:new THREE.MeshStandardMaterial({color:0xf3e3a1,roughness:0.3,emissive:0x3a3418}), lampP:new THREE.MeshStandardMaterial({color:0xb9a27a,roughness:0.3})};
-  const parts={}, m4=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(), sc=new V3(), ps=new V3();
-  const add=(k,g,x,y,z,sx,sy,sz,rx,ry,rz)=>{ e.set(rx||0,ry||0,rz||0); q.setFromEuler(e); ps.set(x,y,z); sc.set(sx,sy,sz); m4.compose(ps,q,sc);
-    const gg=g.index?g.toNonIndexed():g.clone(); gg.applyMatrix4(m4); (parts[k]=parts[k]||[]).push(gg); };
-  const box=(k,x0,x1,y0,y1,z0,z1)=>add(k,PG.box,(x0+x1)/2,(y0+y1)/2,(z0+z1)/2,x1-x0,y1-y0,z1-z0);
-  const duct=new THREE.CylinderGeometry(0.039,0.039,0.07,24,1,true);
-  box('dark',-0.2,0.2,0.02,0.035,-0.058,0.058);                                       // chassis plate under the spine
-  box('body',-0.16,0.205,0.035,0.2,-0.055,0.055); box('body',-0.15,0.195,0.2,0.215,-0.048,0.048);   // central spine
-  box('grey',0.17,0.205,0.035,0.125,-0.07,0.07);                                      // front unit, CC1 and CC2
-  box('dark',-0.2,-0.16,0.035,0.09,-0.075,0.075);                                     // rear unit, CC3 and CC4
-  add('black',PG.c12,-0.212,0.07,0,0.032,0.026,0.032,0,0,Math.PI/2);                  // tether connector at the back
-  for(const s of [1,-1]){
-    box('body',-0.185,0.185,0.03,0.155,s*0.152,s*0.178);                              // pontoon rail
-    { const sh=new THREE.Shape(), v0=-s*0.058, v1=-s*0.152;                          // thruster pod, open through both ducts
-      sh.moveTo(-0.125,Math.min(v0,v1)); sh.lineTo(0.12,Math.min(v0,v1)); sh.lineTo(0.12,Math.max(v0,v1)); sh.lineTo(-0.125,Math.max(v0,v1)); sh.closePath();
-      for(const x of [0.068,-0.068]){ const hp=new THREE.Path(); hp.absarc(x,-s*0.1145,0.039,0,Math.PI*2,true); sh.holes.push(hp); }
-      const pod=new THREE.ExtrudeGeometry(sh,{depth:0.065,bevelEnabled:false,curveSegments:20}); pod.rotateX(-Math.PI/2); pod.computeVertexNormals();
-      add('dark',pod,0,0.035,0,1,1,1); }
-    for(const x of [0.068,-0.068]){ const z=s*0.1145;                                    // vertical thrusters TC5-TC8
-      add('grey',duct,x,0.07,z,1,1,1); add('black',PG.c12,x,0.07,z,0.03,0.05,0.03);
-      for(let k=0;k<3;k++) add('black',PG.box,x,0.06,z,0.068,0.004,0.012,0,k*Math.PI/3,0.3); }
-    box(s>0?'lampS':'lampP',-0.018,0.018,0.012,0.022,s*0.113,s*0.127);                 // pontoon light, facing the hull
-  }
-  for(const [x,z,ry] of [[0.163,0.112,-Math.PI/4],[0.163,-0.112,Math.PI/4],[-0.168,0.115,-3*Math.PI/4],[-0.168,-0.115,3*Math.PI/4]]){
-    add('body',PG.box,x,0.075,z,0.1,0.08,0.062,0,ry,0);                               // corner unit housings TC1-TC4
-    add('dark',PG.box,x-0.055*Math.cos(ry),0.07,z+0.055*Math.sin(ry),0.045,0.06,0.05,0,ry,0);   // motor behind each housing
-  }
-  for(const [x,z] of [[0.19,0.148],[0.19,-0.148],[-0.19,0.148],[-0.19,-0.148]]){         // rotary corner brushes
-    add('dark',PG.c12,x,0.012,z,0.04,0.012,0.04);
-    for(let k=0;k<16;k++){ const a=k/16*Math.PI*2; add('bristle',PG.c8,x+Math.cos(a)*0.03,0.01,z+Math.sin(a)*0.03,0.005,0.02,0.005,0,-a,Math.PI/2); }
-  }
-  for(const sx of [1,-1]) for(let z=-0.105; z<=0.1051; z+=0.0105){                     // bristle strips front and rear
-    add('bristle',PG.c8,sx*0.215,0.009,z,0.006,0.03,0.006,0,0,Math.PI/2);
-    add('bristle',PG.c8,sx*0.212,0.02,z+0.005,0.006,0.026,0.006,0,0,Math.PI/2); }
-  const geo={}; for(const k in parts) geo[k]=mergeGeoms(parts[k]);
-  return {geo,M};
+// fleet technician, about 1.78 m tall, facing +x: boots, khaki trousers, dark long-sleeve jacket under a fluorescent hi-vis
+// vest with reflective bands and the Hullbot mark front and back, white hard hat and sunglasses (as on site)
+const PERSON=(function(){
+  const M={skin:new THREE.MeshStandardMaterial({color:0xc99a7c,roughness:0.75}), khaki:new THREE.MeshStandardMaterial({color:0x8f7a55,roughness:0.85}),
+    boot:new THREE.MeshStandardMaterial({color:0x2a2622,roughness:0.7}), jacket:new THREE.MeshStandardMaterial({color:0x1d2126,roughness:0.85}),
+    vest:new THREE.MeshStandardMaterial({color:0xcff53d,roughness:0.55,emissive:0x2c3a00}), refl:new THREE.MeshStandardMaterial({color:0xd5d9dc,roughness:0.3,metalness:0.7}),
+    hat:new THREE.MeshStandardMaterial({color:0xf6f6f2,roughness:0.35}), shades:new THREE.MeshStandardMaterial({color:0x0d0f12,roughness:0.15,metalness:0.6})};
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=192; const c=cv.getContext('2d'); c.clearRect(0,0,256,192);
+  const mark='M5 5.6C5 4.1 6.4 3.2 7.8 3.7C15.6 6.4 24.4 6.4 32.2 3.7C33.6 3.2 35 4.1 35 5.6C35 7.3 34.2 8.9 33 10.1C29.6 13.5 25.2 15.4 20 15.4C14.8 15.4 10.4 13.5 7 10.1C5.8 8.9 5 7.3 5 5.6Z';
+  c.fillStyle='#111'; c.save(); c.translate(88,8); c.scale(2.0,2.0); const pth=new Path2D(mark); c.fill(pth); c.translate(0,40); c.scale(1,-1); c.fill(pth); c.restore();
+  c.font='700 38px Inter, Arial'; c.textAlign='center'; c.fillText('HULLBOT',128,150);
+  const logo=new THREE.CanvasTexture(cv);
+  const G={legU:new THREE.CylinderGeometry(0.078,0.064,0.44,16), legL:new THREE.CylinderGeometry(0.06,0.05,0.42,16), knee:new THREE.SphereGeometry(0.064,14,10),
+    pelvis:new THREE.SphereGeometry(1,20,14), torso:new THREE.CylinderGeometry(0.2,0.17,0.52,24), vest:new THREE.CylinderGeometry(0.212,0.184,0.46,24,1,true),
+    band:new THREE.CylinderGeometry(0.214,0.198,0.035,24,1,true), shoulder:new THREE.SphereGeometry(0.075,16,12), armU:new THREE.CylinderGeometry(0.056,0.05,0.3,14),
+    armL:new THREE.CylinderGeometry(0.048,0.04,0.27,14), hand:new THREE.SphereGeometry(0.045,12,10), neck:new THREE.CylinderGeometry(0.05,0.055,0.09,12),
+    head:new THREE.SphereGeometry(0.105,24,18), ear:new THREE.SphereGeometry(0.022,8,6), hat:new THREE.SphereGeometry(0.128,24,12,0,Math.PI*2,0,Math.PI/2),
+    brim:new THREE.CylinderGeometry(0.14,0.145,0.012,28), ridge:new THREE.BoxGeometry(0.2,0.025,0.03), shades:new THREE.BoxGeometry(0.03,0.036,0.17),
+    boot:new THREE.BoxGeometry(0.27,0.09,0.11), blob:new THREE.SphereGeometry(1,18,14), logoBack:new THREE.PlaneGeometry(0.24,0.18), logoChest:new THREE.PlaneGeometry(0.075,0.056)};
+  return {M,G,logo:new THREE.MeshBasicMaterial({map:logo,transparent:true,depthWrite:false})};
 })();
-function makeRobot(){ const g=new THREE.Group(); for(const k in ROBOT.geo) g.add(new THREE.Mesh(ROBOT.geo[k],ROBOT.M[k])); return g; }
+function makePerson(){ const g=new THREE.Group(), {M,G}=PERSON;
+  const mk=(geo,mat,x,y,z,rx,ry,rz,sx,sy,sz)=>{ const m=new THREE.Mesh(geo,mat); m.position.set(x,y,z); m.rotation.set(rx||0,ry||0,rz||0); if(sx) m.scale.set(sx,sy,sz); g.add(m); return m; };
+  for(const z of [-0.1,0.1]){ mk(G.boot,M.boot,0.04,0.045,z); mk(G.legL,M.khaki,0,0.30,z); mk(G.knee,M.khaki,0,0.51,z); mk(G.legU,M.khaki,0,0.73,z); }
+  mk(G.pelvis,M.khaki,0,0.95,0,0,0,0,0.13,0.1,0.2);
+  mk(G.torso,M.jacket,0,1.22,0,0,0,0,0.62,1,1.06);                               // jacket
+  mk(G.vest,M.vest,0,1.2,0,0,0,0,0.64,1,1.08);                                   // hi-vis vest over it
+  for(const y of [1.05,1.13]) mk(G.band,M.refl,0,y,0,0,0,0,0.645,1,1.085);       // reflective bands
+  for(const z of [-0.2,0.2]){ mk(G.shoulder,M.jacket,0,1.43,z);
+    mk(G.armU,M.jacket,0.02,1.28,z*1.06,0,0,-0.1); mk(G.armL,M.jacket,0.06,1.03,z*1.06,0,0,-0.28); mk(G.hand,M.skin,0.1,0.9,z*1.06); }
+  mk(G.neck,M.skin,0,1.51,0); mk(G.head,M.skin,0.005,1.63,0,0,0,0,0.92,1.12,0.88);
+  for(const z of [-0.093,0.093]) mk(G.ear,M.skin,-0.005,1.63,z);
+  // face, sculpted in the skin tone only: brow ridge, nose, lips, chin and jaw
+  const f=(x,y,z,sx,sy,sz,rz)=>mk(G.blob,M.skin,x,y,z,0,0,rz||0,sx,sy,sz);
+  f(0.04,1.575,0,0.075,0.052,0.083);                                              // jaw
+  f(0.086,1.668,0,0.022,0.015,0.078);                                             // brow ridge
+  f(0.1,1.627,0,0.018,0.04,0.016,-0.25); f(0.111,1.606,0,0.015,0.014,0.017);     // nose bridge and tip
+  for(const z of [-0.011,0.011]) f(0.104,1.6,z,0.009,0.008,0.009);                // nostrils
+  f(0.095,1.579,0,0.011,0.007,0.03); f(0.093,1.568,0,0.011,0.008,0.027);          // upper and lower lip
+  f(0.083,1.546,0,0.03,0.026,0.034);                                              // chin
+  mk(G.hat,M.hat,0,1.68,0,0,0,0,1.05,0.95,1); mk(G.brim,M.hat,0.012,1.68,0); mk(G.ridge,M.hat,0,1.795,0);   // hard hat
+  const lb=mk(G.logoBack,PERSON.logo,-0.128,1.24,0,0,-Math.PI/2,0); lb.renderOrder=7;                      // Hullbot mark on the back
+  const lc=mk(G.logoChest,PERSON.logo,0.128,1.33,0.08,0,Math.PI/2,0); lc.renderOrder=7;                     // and the chest
+  return g; }
+// Hullbot H6.3 at true size (46 cm long, 37.5 cm wide, 21.5 cm high), from the TC/CC drawings and site photos.
+// Hull side (belly, y=0 against the hull): full-width brush rollers front and rear (CC1 to CC4) with dense bristles, splayed
+// conical corner brushes (TC1 to TC4), the grey belly plate with the four guarded vertical thruster ducts (TC5 to TC8) and
+// their propellers, the triangular three-lens camera pod, the front and rear light bars and the TOF sensors. Back: the white
+// central spine with its slots, curved pontoon rails with their lights, angled corner housings, the forward stereo camera,
+// LED spotlights and the tether connector. Front +x, starboard +z. Parts are merged once and shared by every robot.
+const ROBOT=(function(){
+  const M={body:new THREE.MeshStandardMaterial({color:0xeef0f1,roughness:0.4}), grey:new THREE.MeshStandardMaterial({color:0xb9bfc4,roughness:0.5,metalness:0.15}),
+    dark:new THREE.MeshStandardMaterial({color:0x2c3137,roughness:0.6}), black:new THREE.MeshStandardMaterial({color:0x121417,roughness:0.55}),
+    bristle:new THREE.MeshStandardMaterial({color:0xe2e5e7,roughness:0.7}), bristleK:new THREE.MeshStandardMaterial({color:0x26292d,roughness:0.7}),
+    lens:new THREE.MeshStandardMaterial({color:0x0a1626,roughness:0.08,metalness:0.6}), rim:new THREE.MeshStandardMaterial({color:0x9aa3aa,roughness:0.3,metalness:0.8}),
+    led:new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xfff3d6,emissiveIntensity:1.0,roughness:0.2}),
+    lampS:new THREE.MeshStandardMaterial({color:0xf3e3a1,roughness:0.3,emissive:0x5a4a18}), tan:new THREE.MeshStandardMaterial({color:0xc9b48a,roughness:0.5}),
+    face:new THREE.MeshStandardMaterial({color:0x07090c,roughness:0.08,metalness:0.6}), blackIn:new THREE.MeshStandardMaterial({color:0x0b0c0e,roughness:0.7,side:THREE.DoubleSide}),
+    clear:new THREE.MeshStandardMaterial({color:0xe9eef0,roughness:0.12,metalness:0.1,transparent:true,opacity:0.55}), plate:new THREE.MeshStandardMaterial({color:0x8e959b,roughness:0.55,metalness:0.1}), glass:new THREE.MeshStandardMaterial({color:0x18365a,roughness:0.03,metalness:0.95,emissive:0x050c18})};
+  const parts={}, m4=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(), sc=new V3(), ps=new V3(), Y=new V3(0,1,0);
+  const put=(k,g,mat)=>{ const gg=g.index?g.toNonIndexed():g.clone(); gg.applyMatrix4(mat); (parts[k]=parts[k]||[]).push(gg); };
+  const add=(k,g,x,y,z,sx,sy,sz,rx,ry,rz)=>{ e.set(rx||0,ry||0,rz||0); q.setFromEuler(e); ps.set(x,y,z); sc.set(sx,sy,sz); m4.compose(ps,q,sc); put(k,g,m4); };
+  const orient=(k,g,p,from,dir,sx,sy,sz)=>{ q.setFromUnitVectors(from,dir.clone().normalize()); sc.set(sx,sy,sz); m4.compose(p,q,sc); put(k,g,m4); };
+  const along=(k,g,p,dir,len,w)=>{ q.setFromUnitVectors(Y,dir.clone().normalize()); sc.set(w,len,w); m4.compose(p.clone().addScaledVector(dir.clone().normalize(),len/2),q,sc); put(k,g,m4); };
+  const box=(k,x0,x1,y0,y1,z0,z1)=>add(k,PG.box,(x0+x1)/2,(y0+y1)/2,(z0+z1)/2,x1-x0,y1-y0,z1-z0);
+  const ducts=[[0.072,0.112],[-0.072,0.112],[0.072,-0.112],[-0.072,-0.112]], RD=0.043, SHELL=new THREE.CylinderGeometry(0.5,0.5,1,28,1,true);
+  // ---- hull side ----
+  for(const sx of [1,-1]){ const xr=sx*0.188, yr=0.056;
+    const pre=sx>0?'F:':'R:';                                                                                          // front and rear drums spin as their own parts
+    for(const zc of [-0.079,0.079]) add(pre+'dark',PG.c20,xr,yr,zc,0.05,0.152,0.05,Math.PI/2,0,0);                     // roller cores, axis across
+    for(let z=-0.152; z<=0.1521; z+=0.0105){ if(Math.abs(z)<0.005) continue;                                         // bristle tufts round each roller
+      for(let k=0;k<11;k++){ const a=k/11*Math.PI*2+z*37, d=new V3(Math.cos(a),Math.sin(a),0);
+        along(pre+(k%3?'bristleK':'bristle'),PG.c8,new V3(xr+d.x*0.024,yr+d.y*0.024,z),d,0.032,0.0042); } }
+    box('dark',sx>0?0.15:-0.212,sx>0?0.212:-0.15,0.085,0.1,-0.17,0.17);                                              // roller housing over the top
+    for(const s of [1,-1]){ const c=new V3(xr,yr,s*0.155);                                                             // domed end caps TC1-TC4
+      add(pre+'dark',PG.hemi,c.x,c.y,c.z,0.05,0.05,0.05,s>0?Math.PI/2:-Math.PI/2,0,0);
+      // bristles spread evenly over the dome (Fibonacci spiral), at about the same spacing as along the drum
+      for(let k=0,N=46;k<N;k++){ const ax=(k+0.5)/N, rr=Math.sqrt(1-ax*ax), ph=k*2.39996, d=new V3(rr*Math.cos(ph),rr*Math.sin(ph),s*ax);
+        along(pre+(k%3?'bristleK':'bristle'),PG.c8,c.clone().addScaledVector(d,0.022),d,0.032,0.0042); } } }
+  // belly plate with the four thruster openings
+  { const sh=new THREE.Shape(), X0=-0.152, X1=0.152, Z0=-0.168, Z1=0.168, r=0.03;
+    sh.moveTo(X0+r,Z0); sh.lineTo(X1-r,Z0); sh.quadraticCurveTo(X1,Z0,X1,Z0+r); sh.lineTo(X1,Z1-r); sh.quadraticCurveTo(X1,Z1,X1-r,Z1); sh.lineTo(X0+r,Z1); sh.quadraticCurveTo(X0,Z1,X0,Z1-r); sh.lineTo(X0,Z0+r); sh.quadraticCurveTo(X0,Z0,X0+r,Z0);
+    for(const [x,z] of ducts){ const h=new THREE.Path(); h.absarc(x,z,RD,0,Math.PI*2,true); sh.holes.push(h); }
+    const pl=new THREE.ExtrudeGeometry(sh,{depth:0.012,bevelEnabled:false,curveSegments:24}); pl.rotateX(Math.PI/2); pl.translate(0,0.047,0); add('grey',pl,0,0,0,1,1,1); }
+  const tor=new THREE.TorusGeometry(RD,0.0055,8,28), tin=new THREE.TorusGeometry(0.021,0.003,6,20), duct=new THREE.CylinderGeometry(RD,RD,0.075,28,1,true);
+  for(const [x,z] of ducts){
+    add('black',tor,x,0.035,z,1,1,1,Math.PI/2,0,0); add('black',tin,x,0.036,z,1,1,1,Math.PI/2,0,0);                   // guard rings
+    for(let k=0;k<5;k++){ const a=k/5*Math.PI*2; add('black',PG.box,x+Math.cos(a)*RD/2,0.036,z+Math.sin(a)*RD/2,RD,0.004,0.005,0,-a,0); }   // guard spokes
+    add('grey',duct,x,0.085,z,1,1,1); add('black',PG.c12,x,0.07,z,0.03,0.045,0.03);                                    // duct and hub
+    for(let k=0;k<3;k++){ const a=k/3*Math.PI*2; add('dark',PG.box,x+Math.cos(a)*0.02,0.07,z+Math.sin(a)*0.02,0.03,0.003,0.016,0.35,-a,0); } }   // propeller blades
+  // triangular camera pod with three lenses, light bars front and rear, TOF sensors at the corners
+  { const sh=new THREE.Shape(); sh.moveTo(0.036,-0.048); sh.quadraticCurveTo(0.05,-0.05,0.044,-0.032); sh.lineTo(-0.034,0); sh.lineTo(0.044,0.032); sh.quadraticCurveTo(0.05,0.05,0.036,0.048);
+    sh.lineTo(-0.045,0.012); sh.quadraticCurveTo(-0.058,0,-0.045,-0.012); sh.closePath();
+    const pod=new THREE.ExtrudeGeometry(sh,{depth:0.016,bevelEnabled:true,bevelThickness:0.003,bevelSize:0.004,bevelSegments:2}); pod.rotateX(Math.PI/2); pod.translate(-0.005,0.05,0); add('dark',pod,0,0,0,1,1,1); }
+  for(const [x,z] of [[0.02,0.024],[0.02,-0.024],[-0.028,0]]){ add('rim',PG.c20,x,0.031,z,0.03,0.006,0.03); add('lens',PG.sph,x,0.03,z,0.022,0.012,0.022); }
+  for(const sx of [1,-1]) box('led',sx*0.14-0.003,sx*0.14+0.003,0.032,0.036,-0.115,0.115);
+  for(const sx of [1,-1]) for(const s of [1,-1]) for(const dz of [0,0.02]) add('black',PG.c12,sx*0.148,0.036,s*(0.15-dz),0.012,0.006,0.012);
+  // ---- back, from the top-view drawing ----
+  // central spine: a rounded slab with softened edges; a 3 x 3 grid of slots, tan markers fore and aft, slots at its corners
+  { const sh=new THREE.Shape(), X=0.188, Z=0.056, r=0.04;
+    sh.moveTo(-X+r,-Z); sh.lineTo(X-r,-Z); sh.quadraticCurveTo(X,-Z,X,-Z+r); sh.lineTo(X,Z-r); sh.quadraticCurveTo(X,Z,X-r,Z); sh.lineTo(-X+r,Z); sh.quadraticCurveTo(-X,Z,-X,Z-r); sh.lineTo(-X,-Z+r); sh.quadraticCurveTo(-X,-Z,-X+r,-Z);
+    const sp=new THREE.ExtrudeGeometry(sh,{depth:0.13,bevelEnabled:true,bevelThickness:0.012,bevelSize:0.01,bevelSegments:4,curveSegments:18}); sp.rotateX(-Math.PI/2); sp.translate(0,0.062,0); add('body',sp,0,0,0,1,1,1); }
+  const sTop=0.2045, pill=(k,x,y,z,lx,lz)=>{ const L=Math.max(lx,lz), w=Math.min(lx,lz), ax=lx>=lz;      // a rounded slot or marker
+    add(k,PG.box,x,y,z,ax?L-w:w,0.002,ax?w:L-w); for(const e of [-1,1]) add(k,PG.c12,x+(ax?e*(L-w)/2:0),y,z+(ax?0:e*(L-w)/2),w,0.002,w); };
+  for(const x of [-0.085,0,0.085]) for(const z of [-0.032,0,0.032]) pill('black',x,sTop,z,0.042,0.008);
+  for(const x of [-0.152,0.152]){ pill('tan',x,sTop,0,0.009,0.03); for(const z of [-0.036,0.036]) pill('black',x+(x>0?-0.004:0.004),sTop,z,0.026,0.012); }
+  for(const s of [1,-1]){
+    const sh=new THREE.Shape(), v0=s*0.058, v1=s*0.17;                                                                 // side plates round the ducts
+    sh.moveTo(-0.15,Math.min(v0,v1)); sh.lineTo(0.15,Math.min(v0,v1)); sh.lineTo(0.15,Math.max(v0,v1)); sh.lineTo(-0.15,Math.max(v0,v1)); sh.closePath();
+    for(const [x,z] of ducts.filter(d=>Math.sign(d[1])===s)){ const h=new THREE.Path(); h.absarc(x,z,RD,0,Math.PI*2,true); sh.holes.push(h); }
+    const dk=new THREE.ExtrudeGeometry(sh,{depth:0.012,bevelEnabled:false,curveSegments:24}); dk.rotateX(Math.PI/2); dk.translate(0,0.122,0); add('plate',dk,0,0,0,1,1,1);
+    for(const [x,z] of ducts.filter(d=>Math.sign(d[1])===s)) add('black',tor,x,0.123,z,1,1,1,Math.PI/2,0,0);
+    pill('tan',0,0.1235,s*0.12,0.032,0.014); box('grey',-0.0015,0.0015,0.1225,0.1255,Math.min(s*0.058,s*0.105),Math.max(s*0.058,s*0.105));   // tan oval and its rod
+    // pontoon rail: straight along the side to a lamp at the front corner, curving in at the rear
+    const path=new THREE.CatmullRomCurve3([new V3(-0.192,0.121,s*0.13),new V3(-0.177,0.127,s*0.153),new V3(-0.145,0.13,s*0.165),new V3(0,0.13,s*0.168),new V3(0.145,0.13,s*0.167),new V3(0.19,0.129,s*0.163)]);
+    add('body',new THREE.TubeGeometry(path,56,0.017,16,false),0,0,0,1,1,1); add('body',PG.sph,-0.192,0.121,s*0.13,0.034,0.034,0.034);
+    for(const x of [-0.105,0.105]) pill('black',x,0.1475,s*0.168,0.024,0.009);                                      // slots on the rail
+    box('black',0.192,0.205,0.112,0.146,Math.min(s*0.142,s*0.182),Math.max(s*0.142,s*0.182));                                                              // lamp bezel at the end of the rail
+    box('clear',0.205,0.222,0.114,0.144,Math.min(s*0.144,s*0.18),Math.max(s*0.144,s*0.18));                             // clear lamp block
+    for(const zz of [0.151,0.172]) add('led',PG.c20,0.2205,0.129,s*zz,0.017,0.003,0.017,0,0,Math.PI/2);                 // its two LEDs
+    add('lampS',PG.box,0,0.13,s*0.1855,0.05,0.012,0.003);                                                              // pontoon light, outside the rail
+    // TC1 to TC4: horizontal cylinder housings angled at 45° towards each corner, rounded at the outer end, motor inboard
+    // TC1 to TC4: corner thrusters in white cylindrical shells angled at 45° to each corner, open at the outer end with a black
+    // duct and the thruster inside, a rim round the mouth, a rounded closed back, and a teardrop fairing on top carrying the TOF sensor
+    for(const sx of [1,-1]){ const d=new V3(sx,-0.3,s).normalize(), c=new V3(sx*0.146,0.098,s*0.1), len=0.082, rad=0.043, a0=c.clone().addScaledVector(d,-len/2), mouth=c.clone().addScaledVector(d,len/2);
+      along('body',SHELL,a0,d,len,rad*2); along('blackIn',SHELL,a0,d,len*0.99,rad*1.78);                               // shell, black inside
+      add('body',PG.sph,a0.x,a0.y,a0.z,rad*2,rad*2,rad*2);                                                              // rounded closed back
+      along('black',PG.c20,a0.clone().addScaledVector(d,len*0.28),d,0.003,rad*1.78);                                     // floor of the duct
+      along('dark',PG.c12,a0.clone().addScaledVector(d,len*0.3),d,0.022,0.02);                                           // thruster hub
+      for(let k=0;k<3;k++){ const ang=k*2*Math.PI/3, side=new V3(-d.z,0,d.x), up=new V3(0,1,0), bd=side.clone().multiplyScalar(Math.cos(ang)).addScaledVector(up,Math.sin(ang));
+        orient('dark',PG.box,a0.clone().addScaledVector(d,len*0.42).addScaledVector(bd,rad*0.42),new V3(1,0,0),bd,rad*0.75,0.003,0.016); }   // its blades
+      orient('body',new THREE.TorusGeometry(rad*0.95,0.0035,8,28),mouth,new V3(0,0,1),d,1,1,1);                         // rim round the mouth
+      const ft=c.clone().add(new V3(0,rad*0.78,0)).addScaledVector(d,0.006);
+      orient('body',PG.sph,ft,new V3(1,0,0),d,0.07,0.03,0.042);                                                          // teardrop fairing
+      add('black',PG.sph,ft.x+d.x*0.03,ft.y+0.002,ft.z+d.z*0.03,0.011,0.011,0.011); } }                                   // TOF sensor
+  // forward stereo camera: white elongated-hexagon frame with a dark recessed face and two lenses with metal rims and tinted glass
+  { const hex=(w,h,f)=>{ const sh=new THREE.Shape(); sh.moveTo(-w,0); sh.lineTo(-w*f,h); sh.lineTo(w*f,h); sh.lineTo(w,0); sh.lineTo(w*f,-h); sh.lineTo(-w*f,-h); sh.closePath(); return sh; };
+    const fr=new THREE.ExtrudeGeometry(hex(0.052,0.028,0.62),{depth:0.042,bevelEnabled:true,bevelThickness:0.003,bevelSize:0.003,bevelSegments:2}); fr.rotateY(Math.PI/2); fr.translate(0.186,0.142,0); add('body',fr,0,0,0,1,1,1);
+    const fc=new THREE.ExtrudeGeometry(hex(0.043,0.021,0.62),{depth:0.004,bevelEnabled:false}); fc.rotateY(Math.PI/2); fc.translate(0.2275,0.142,0); add('face',fc,0,0,0,1,1,1); }
+  for(const z of [-0.019,0.019]){ const t=new THREE.TorusGeometry(0.0105,0.0026,10,24); add('rim',t,0.2315,0.142,z,1,1,1,0,Math.PI/2,0);
+    add('glass',PG.sph,0.2312,0.142,z,0.012,0.019,0.019); add('black',PG.c12,0.2323,0.142,z,0.006,0.002,0.006,0,0,Math.PI/2); }
+  add('black',PG.c12,-0.205,0.155,0,0.03,0.03,0.03,0,0,Math.PI/2);                                                    // tether connector
+  const geo={}, pivot={'F:':new V3(0.188,0.056,0),'R:':new V3(-0.188,0.056,0)};
+  for(const k in parts){ geo[k]=mergeGeoms(parts[k]); const pr=k.slice(0,2); if(pivot[pr]) geo[k].translate(-pivot[pr].x,-pivot[pr].y,0); }
+  const cv=document.createElement('canvas'); cv.width=cv.height=128; const c=cv.getContext('2d'), gr=c.createRadialGradient(64,64,0,64,64,64);
+  gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(0.18,'rgba(255,246,222,0.9)'); gr.addColorStop(0.45,'rgba(255,236,190,0.25)'); gr.addColorStop(1,'rgba(255,230,180,0)'); c.fillStyle=gr; c.fillRect(0,0,128,128);
+  const glow=new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),color:0xfff3dc,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+  return {geo,M,pivot,glow};
+})();
+// a robot; 'lit' robots (in the simulator) carry their front LED glow and a spotlight that lights the hull ahead
+function makeRobot(lit){ const g=new THREE.Group(), drums={};
+  for(const k in ROBOT.geo){ const pr=k.slice(0,2), mat=ROBOT.M[ROBOT.pivot[pr]?k.slice(2):k], m=new THREE.Mesh(ROBOT.geo[k],mat);
+    if(ROBOT.pivot[pr]){ if(!drums[pr]){ drums[pr]=new THREE.Group(); drums[pr].position.copy(ROBOT.pivot[pr]); drums[pr].userData.dir=pr==='F:'?-1:1; g.add(drums[pr]); } drums[pr].add(m); }
+    else g.add(m); }
+  g.userData.drums=Object.values(drums);
+  if(lit){ const glows=[]; for(const s of [1,-1]){ const sp=new THREE.Sprite(ROBOT.glow); sp.position.set(0.222,0.129,s*0.162); sp.scale.setScalar(0.32); sp.renderOrder=12; g.add(sp); glows.push(sp); }
+    const spots=[]; for(const s of [1,-1]){ const L=new THREE.SpotLight(0xfff1d6,0,6,0.62,0.65,1.6); L.position.set(0.222,0.129,s*0.162);   // one from each front corner lamp
+      L.target.position.set(0.95,-0.04,s*0.22); g.add(L); g.add(L.target); spots.push(L); }                    // aimed down at the hull ahead, where the cameras look
+    g.userData.glows=glows; g.userData.spots=spots; }
+  return g; }
 const worldGroup=new THREE.Group(); worldGroup.userData.world=true; scene.add(worldGroup);
 const crewGroup=new THREE.Group(); crewGroup.visible=false; worldGroup.add(crewGroup);
 function onDeck(obj,x,z,yaw,h){ obj.position.copy(W3(x,h==null?D:h,z)); obj.rotation.y=yaw||0; crewGroup.add(obj); return obj; }
@@ -1643,7 +1793,7 @@ function buildCrew(){
   const wifi=[];
   for(const z of DZ){ const xc=(z.x0+z.x1)/2, zc=(z.z0+z.z1)/2, s=z.s;
     if(z.kind==='deploy'){ const out=-s*Math.PI/2;
-      tag(onDeck(makePerson(MAT.hivis),xc-0.35*sxi,z.z1-s*0.35*szi,out),'Fleet technician','');
+      tag(onDeck(makePerson(),xc-0.35*sxi,z.z1-s*0.35*szi,out),'Fleet technician','');
       tag(onDeck(makeRobot(),xc+0.35*sxi,z.z1-s*0.35*szi,out),'Hullbot H6.3','46 × 37.5 × 21.5 cm, shown at true scale.');
     }
   }
@@ -1711,40 +1861,46 @@ const dsOf=key=>(HULL.cat?CAT_DS:DZ).find(z=>z.key===key);
 function surfW(x,h,side,off){ const q=surf(x,h,side), n=WN(q.n); return {p:W3(q.p.x+X0,q.p.y,q.p.z).addScaledVector(n,off), n}; }
 function railStart(pts,nrm,dsx,side){ pts.push(W3(dsx,D+0.9/VS.sy,side*(edgeY(dsx)+0.25/VS.sz))); nrm.push(new V3(0,0,side)); }   // robot starts at the railing
 function sideTrack(cfg,lane){
-  const side=cfg.side, top=draught/VS.sy, x0=cfg.x0(), x1=cfg.x1(), ds=dsOf(cfg.ds), dsx=(ds.x0+ds.x1)/2, stepB=1/VS.sx;
-  const hs=[], gs=[]; let g=0, prev=null;                             // lanes evenly spaced along the girth, waterline to flat bottom
-  for(let h=top; h>=0; h-=0.02){ const p=[yMid(h)*VS.sz,h*VS.sy]; if(prev) g+=Math.hypot(p[0]-prev[0],p[1]-prev[1]); hs.push(h); gs.push(g); prev=p; }
-  const total=gs[gs.length-1], lanesH=[];
-  for(let s=0.3; s<=total-0.15; s+=lane){ let i=0; while(i<gs.length-2&&gs[i+1]<s) i++; const t=(s-gs[i])/Math.max(1e-6,gs[i+1]-gs[i]); lanesH.push(hs[i]+(hs[i+1]-hs[i])*t); }
-  const pts=[], nrm=[]; let inc=Math.abs(dsx-x0)<=Math.abs(dsx-x1);
+  // points every 25 cm at the bow and stern, where the hull curves tightly in plan, so the line between them stays outside it
+  const side=cfg.side, top=draught/VS.sy, x0=cfg.x0(), x1=cfg.x1(), ds=dsOf(cfg.ds), dsx=(ds.x0+ds.x1)/2, stepB=(cfg.endGap?0.25:1)/VS.sx;
+  const pts=[], nrm=[], off=cfg.endGap?0.06:0.03; let inc=Math.abs(dsx-x0)<=Math.abs(dsx-x1);
   const eg=cfg.endGap||0.6;                                             // how close lanes run to the stem or stern end
   // bow and stern: end each lane where the hull is still 15 cm wide on this side, so lane ends stay on this side of the stem
   const endX=(h,fwd)=>{ const xe=fwd?xFwd(h):xAft(h), d=fwd?-1:1; for(let s=0.02;s<8;s+=0.02){ const x=xe+d*s; if(halfBreadth(x,Math.max(0,h))>=0.15) return x; } return xe+d*0.6; };
   const xEndA=h=>cfg.endGap?endX(h,false):xAft(h)+eg, xEndF=h=>cfg.endGap?endX(h,true):xFwd(h)-eg;
+  // lanes run at constant depth, stepped by this zone's own hull shape: the surface distance per metre of depth is averaged
+  // along each lane, so lanes sit a lane's width apart on average across the zone (at the bow and stern the hull slopes in,
+  // so the same depth step covers more surface there than at midships)
+  const rAt=h=>{ const hh=Math.max(0.03,h), xa=Math.max(x0,xEndA(hh)), xb=Math.min(x1,xEndF(hh)); if(xb-xa<0.5) return 1; let sum=0;
+    for(let i=0;i<=16;i++){ const x=xa+(xb-xa)*i/16, lo=Math.max(0,hh-0.03), dz=(halfBreadth(x,hh+0.03)-halfBreadth(x,lo))/(hh+0.03-lo)*VS.sz/VS.sy; sum+=Math.min(6,Math.sqrt(1+dz*dz)); }
+    return 17/sum; };
+  const lanesH=[]; { let h=top-0.3*rAt(top)/VS.sy; while(h>0.02){ lanesH.push(h); let d=lane*rAt(h)/VS.sy; d=lane*rAt(h-d/2)/VS.sy; h-=d; } }
   const hT=lanesH[0], start=inc?Math.max(x0,xEndA(hT)):Math.min(x1,xEndF(hT));
   railStart(pts,nrm,dsx,side);
-  for(let h=D-0.4; h>hT+0.25; h-=0.5/VS.sy){ const q=surfW(dsx,h,side,0.03); pts.push(q.p); nrm.push(q.n); }   // lowered down the topsides
-  { const n=Math.max(1,Math.ceil(Math.abs(start-dsx)/stepB)); for(let i=0;i<=n;i++){ const q=surfW(dsx+(start-dsx)*i/n,hT,side,0.03); pts.push(q.p); nrm.push(q.n); } }
+  for(let h=D-0.4; h>hT+0.25; h-=0.5/VS.sy){ const q=surfW(dsx,h,side,off); pts.push(q.p); nrm.push(q.n); }   // lowered down the topsides
+  { const n=Math.max(1,Math.ceil(Math.abs(start-dsx)/stepB)); for(let i=0;i<=n;i++){ const q=surfW(dsx+(start-dsx)*i/n,hT,side,off); pts.push(q.p); nrm.push(q.n); } }
   const transitN=pts.length; let lanes=0, prevH=null;
   for(const h of lanesH){ const xa=Math.max(x0,xEndA(h)), xb=Math.min(x1,xEndF(h)); if(xb-xa<0.5) continue;
     const a=inc?xa:xb, b=inc?xb:xa, n=Math.max(1,Math.ceil(Math.abs(b-a)/stepB));
     if(prevH!==null){ // step down to the next lane along the zone's end edge, staying on the hull
       const fwdEnd=!inc, m=Math.max(2,Math.ceil(Math.abs(prevH-h)*VS.sy/0.08));
-      for(let k=1;k<m;k++){ const hh=prevH+(h-prevH)*k/m, xx=fwdEnd?Math.min(x1,xEndF(hh)):Math.max(x0,xEndA(hh)), q=surfW(xx,hh,side,0.03); pts.push(q.p); nrm.push(q.n); } }
-    for(let i=0;i<=n;i++){ const q=surfW(a+(b-a)*i/n,h,side,0.03); pts.push(q.p); nrm.push(q.n); }
+      for(let k=1;k<m;k++){ const hh=prevH+(h-prevH)*k/m, xx=fwdEnd?Math.min(x1,xEndF(hh)):Math.max(x0,xEndA(hh)), q=surfW(xx,hh,side,off); pts.push(q.p); nrm.push(q.n); } }
+    for(let i=0;i<=n;i++){ const q=surfW(a+(b-a)*i/n,h,side,off); pts.push(q.p); nrm.push(q.n); }
     prevH=h; inc=!inc; lanes++; }
   return {pts,nrm,lanes,transitN}; }
 function nicheTrack(cfg,lane,opts){
   // rudder and propeller: down the side at the deployment point, aft along the hull, round outside the propeller tips,
   // then the rudder's two faces (lanes at constant depth wrapping both edges) or each propeller blade face (root to tip)
-  const ds=dsOf(cfg.ds), side=ds.s, dsx=(ds.x0+ds.x1)/2, pts=[], nrm=[], top=draught/VS.sy, hA=Math.min(5.5,top-0.4);
+  const ds=dsOf((opts&&opts.ds)||cfg.ds), side=ds.s, dsx=(ds.x0+ds.x1)/2, pts=[], nrm=[], top=draught/VS.sy, hA=Math.min(5.5,top-0.4);
   const push=(x,h,z,n)=>{ pts.push(W3(x,h,z)); nrm.push(n); }, outN=WN(new V3(0,0,side));
   if(opts&&opts.from){ // carrying straight on from the rudder: no recovery, just round to the propeller
-    const zs=Math.sign(opts.from.p.z)||-side, nS=WN(new V3(0,0,zs)); pts.push(opts.from.p.clone()); nrm.push(opts.from.n.clone()); push(3.4,hA,zs*3.9,nS); }
+    const zs=Math.sign(opts.from.p.z)||-side, down=WN(new V3(0,-1,0)), xm=R_LE-R_C/2; pts.push(opts.from.p.clone()); nrm.push(opts.from.n.clone());
+    if(zs!==side){ push(xm,R_BOT-0.3,zs*0.7,WN(new V3(0,0,zs))); push(xm,R_BOT-0.7,0,down); push(xm,R_BOT-0.3,side*0.7,outN); }   // back under the rudder: the line unwinds
+    push(R_LE+0.6,hA,side*1.4,outN); push(3.4,hA,side*3.9,outN); }
   else { railStart(pts,nrm,dsx,side);
     for(let h=D-0.4; h>hA; h-=0.5/VS.sy){ const q=surfW(dsx,h,side,0.03); pts.push(q.p); nrm.push(q.n); }
     for(let x=dsx; x>9.5; x-=1/VS.sx){ const q=surfW(x,hA,side,0.03); pts.push(q.p); nrm.push(q.n); }
-    push(8.5,hA,side*3.9,outN); push(3.4,hA,side*3.9,outN); }
+    push(8.5,hA,side*3.9,outN); if(cfg.part==='rudder') push(3.4,hA,side*3.9,outN); }
   let lanes=0;
   if(cfg.part==='rudder'){
     const hTop=Math.min(R_TOP-0.3,top-0.3); if(hTop<=R_BOT+0.3) return {pts,nrm,lanes:0,transitN:pts.length};
@@ -1758,20 +1914,51 @@ function nicheTrack(cfg,lane,opts){
     for(let j=0;j<hs.length;j++) faceLane(-side,hs[hs.length-1-j],atTE?j%2===1:j%2===0);   // then the other face, bottom to top
     lanes=hs.length*2;
     return {pts,nrm,lanes,transitN}; }
-  // propeller: radial passes from root to tip and back across each face of every blade, following the blade's
-  // pitched and skewed surface (same shape as the model's blades)
-  const Rp=3.1, rh=0.8, cMax=2.05, Pp=4.3, cx=5.25, ch=3.8, m=Math.max(2,Math.ceil(cMax/lane)), transitN=pts.length+1;
+  // propeller, planned so the tether can't snag on the shaft. The robot only ever works the half of the propeller on its own
+  // deployment point's side: the line then always leads straight back to that side and never crosses the shaft between the hub
+  // and the stern tube. Phase 1 cleans that half: the forward half of the hub (arcs within 85° of its own side), the blades on
+  // that side face to face round their tips, then round outside the tips (through the gap on its own side) to the aft half of
+  // the hub and the boss cap. The robot then parks clear, outboard of the tips, while the engine room turns the shaft 180° on
+  // the turning gear, which brings the other blades and the other half of the hub round to it; phase 2 repeats the same route.
+  // Blade passes follow the blade's pitched and skewed surface (same shape as the model's blades).
+  const Rp=3.1, rh=0.8, cMax=2.05, Pp=4.3, cx=5.25, ch=3.8, m=2*Math.max(1,Math.ceil(cMax/lane/2)), Rr=Rp+0.45, RH=0.95;
+  const homeA=Math.atan2(side*3.9,hA-ch), wrapA=a=>Math.atan2(Math.sin(a),Math.cos(a));      // angle round the shaft, from up towards starboard
+  // before starting, the shaft is set so two blades sit 45° either side of the robot's side: even their roots then stay well
+  // short of the far side of the hub
+  const q90=Math.PI/2; let rot0=((homeA+Math.PI/4-0.35)%q90+q90)%q90; if(rot0>Math.PI/4) rot0-=q90;
   const bladePt=(k,rn,sc,sd)=>{ const r=rh+rn*(Rp-rh), c=cMax*(0.62+0.38*Math.sin(Math.PI*rn*0.85))*Math.sqrt(Math.max(0,1-Math.pow(rn,4)));
     const phi=Math.atan(Pp/(2*Math.PI*r)), skew=0.30*rn*rn, tmax=0.20*(1-rn)+0.02, th=tmax*Math.sqrt(Math.max(0,1-4*sc*sc))*(sd===0?0.5:-0.5);
     const ang=skew+(sc*c*Math.cos(phi)-th*Math.sin(phi))/r, x=sc*c*Math.sin(phi)+th*Math.cos(phi), y=r*Math.cos(ang), z=r*Math.sin(ang);
     let nx=Math.cos(phi), ny=Math.sin(phi)*Math.sin(ang), nz=-Math.sin(phi)*Math.cos(ang); if(sd===1){ nx=-nx; ny=-ny; nz=-nz; }
-    const t=k*Math.PI/2+0.35, ct=Math.cos(t), st=Math.sin(t), n=new V3(nx,ny*ct-nz*st,ny*st+nz*ct).normalize();
+    const t=k*Math.PI/2+0.35+rot0, ct=Math.cos(t), st=Math.sin(t), n=new V3(nx,ny*ct-nz*st,ny*st+nz*ct).normalize();
     return {p:W3(cx+x+n.x*0.05,ch+y*ct-z*st+n.y*0.05,y*st+z*ct+n.z*0.05), n:WN(n)}; };
-  for(let sd=0;sd<2;sd++) for(let k=0;k<4;k++){ let out=true;
-    for(let j=0;j<m;j++){ const sc=(-0.5+(j+0.5)/m)*0.9;
-      for(let i=0;i<=10;i++){ const rn=0.08+0.86*(out?i:10-i)/10, q=bladePt(k,rn,sc,sd); pts.push(q.p); nrm.push(q.n); }
-      out=!out; lanes++; } }
-  return {pts,nrm,lanes,transitN}; }
+  const rim=(a,dx)=>push(cx+dx,ch+Rr*Math.cos(a),Rr*Math.sin(a),WN(new V3(dx>0?1:dx<0?-1:0,dx?0:Math.cos(a),dx?0:Math.sin(a))));
+  const arc=(a0,a1,dx)=>{ const n=Math.max(1,Math.ceil(Math.abs(a1-a0)/0.25)); for(let i=1;i<=n;i++) rim(a0+(a1-a0)*i/n,dx); };
+  const capR=x=>RH+(0.28-RH)*clamp((4.5-x)/1.1,0,1);                                         // boss cap: tapers aft from the hub
+  const hubArcs=(xs,rOf)=>{ let dir=1; for(const x of xs){ const dr=(rOf(x+0.05)-rOf(x-0.05))/0.1;   // arcs within 80° of the robot's own side, on the surface's own slope
+      for(let i=0;i<=14;i++){ const a=homeA+dir*(-80+160*i/14)*Math.PI/180, n=new V3(-dr,Math.cos(a),Math.sin(a)).normalize(), r=rOf(x);
+        push(x+n.x*0.05,ch+r*Math.cos(a)+n.y*0.05,r*Math.sin(a)+n.z*0.05,WN(n)); } dir=-dir; lanes++; } };
+  const steps=(x0,x1)=>{ const out=[], n=Math.max(1,Math.round(Math.abs(x1-x0)/lane)); for(let i=0;i<=n;i++) out.push(x0+(x1-x0)*i/n); return out; };
+  const near=[0,1,2,3].map(k=>({k,d:wrapA(0.35+rot0+k*Math.PI/2-homeA)})).filter(q=>Math.abs(q.d)<=Math.PI/2+1e-6);
+  const order=near.filter(q=>q.d>=0).sort((a,c)=>a.d-c.d).concat(near.filter(q=>q.d<0).sort((a,c)=>c.d-a.d));
+  const wind=Math.max(...near.map(q=>Math.abs(q.d)),80*Math.PI/180);
+  const face=(k,sd)=>{ let out=false; for(let j=0;j<m;j++){ const sc=(-0.5+(j+0.5)/m)*0.9;                // starts and ends at the tip
+      for(let i=0;i<=10;i++){ const rn=0.18+0.76*(out?i:10-i)/10, q=bladePt(k,rn,sc,sd); pts.push(q.p); nrm.push(q.n); } out=!out; lanes++; } };   // root end clear of the hub
+  const phase=()=>{
+    let cur=0;
+    for(const q of order){ arc(homeA+cur,homeA+q.d,0.7); cur=q.d; const tip=homeA+q.d+0.265;   // the tips are skewed about 15° round from the blade's root
+      face(q.k,0); rim(tip,0); rim(tip,-0.7);                                                   // forward face, round its tip to the aft side
+      face(q.k,1); rim(tip,-0.7); rim(tip,0); rim(homeA+cur,0.7); }                             // aft face, back round the same tip
+    arc(homeA+cur,homeA,0.7); rim(homeA,0); rim(homeA,-0.7);                                 // round the outside, through the gap on its own side
+    hubArcs([4.62].concat(steps(4.3,3.55)),capR);                                              // hub aft of the roots, then on down the boss cap, back and forth
+    rim(homeA,-0.7); rim(homeA,0); rim(homeA,0.7); };                                         // back to the forward side
+  rim(homeA,0.7); const transitN=pts.length;
+  phase();
+  // the shaft is turned 180° on the turning gear while the robot waits clear, outboard of the tips on its own side
+  const pk=(dx,ex)=>push(cx+dx,ch+(Rr+ex)*Math.cos(homeA),(Rr+ex)*Math.sin(homeA),WN(new V3(0,Math.cos(homeA),Math.sin(homeA))));
+  pk(1.0,0.8); const turn0=pts.length-1; pk(1.4,1.4); pk(1.0,0.8); const turn1=pts.length-1; rim(homeA,0.7);
+  phase();
+  return {pts,nrm,lanes,transitN,wind:wind*180/Math.PI,shaftTurn:[turn0,turn1],shaftSet:rot0}; }
 function bottomTrack(cfg,lane){
   // flat bottom: lanes run side to side, port to starboard, starting at midships and working away from it
   const x0=cfg.x0(), x1=cfg.x1(), ds=dsOf(cfg.ds), dsx=(ds.x0+ds.x1)/2, side=ds.s, down=new V3(0,-1,0), pts=[], nrm=[];
@@ -1800,6 +1987,8 @@ const TN=48;                                                          // points 
 // where the free tether would pass inside the hull it rests on the hull surface instead (it catches on the side)
 function hullContact(pts,side){ if(HULL.cat) return catContact(pts); const flags=new Uint8Array(pts.length), clr=0.06;
   for(let i=1;i<pts.length-1;i++){ const p=pts[i], xb=p.x/VS.sx+X0, hb=p.y/VS.sy, zb=p.z/VS.sz;
+    if(xb>R_LE-R_C-0.15&&xb<R_LE+0.15&&hb>R_BOT-0.15&&hb<R_TOP&&Math.abs(zb)<0.5){ flags[i]=1; p.z=(Math.abs(zb)<1e-6?side:Math.sign(zb))*0.5*VS.sz; continue; }   // rests against the rudder
+    if(Math.abs(xb-5.25)<0.55&&Math.hypot(hb-3.8,zb)<3.25){ flags[i]=1; const rr=Math.max(1e-6,Math.hypot(hb-3.8,zb)), k=3.3/rr; p.y=(3.8+(hb-3.8)*k)*VS.sy; p.z=zb*k*VS.sz; continue; }                                        // and against the propeller, not through it
     if(hb<-0.02||hb>D) continue; const hh=Math.max(0,hb); if(xb<xAft(hh)-0.01||xb>xFwd(hh)+0.01) continue;
     const hw=halfBreadth(xb,hh); if(Math.abs(zb)>=hw+clr) continue;
     flags[i]=1;
@@ -1867,10 +2056,10 @@ function travelPose(r,alt,sT,u){ if(r.kind==='cat') return catTravelPose(r,sT,u)
   const pts=[A.entry.clone(),A.entry.clone().lerp(tgt,(x-d1)/d2),tgt.clone()]; hullContact(pts,side);
   return {i:0,p:pts[1],nr:q.nr,a:A.entry,b:tgt}; }
 function buildRun(key){
-  const cfg=SIMZ[key], kind=cfg.kind, chained=key==='N:prop'&&simKeys().includes('N:rudder');
-  let opts=null; if(chained){ const rt=nicheTrack(SIMZ['N:rudder'],SIM.lane), n=rt.pts.length-1; opts={from:{p:rt.pts[n],n:rt.nrm[n]}}; }
+  const cfg=SIMZ[key], kind=cfg.kind, chained=key==='N:prop'&&simKeys().includes('N:rudder')&&!SIM.noChain;
+  let opts=null; if(chained){ const rt=nicheTrack(SIMZ['N:rudder'],SIM.lane), n=rt.pts.length-1; opts={from:{p:rt.pts[n],n:rt.nrm[n]},ds:SIMZ['N:rudder'].ds}; }      // its tether runs back to the rudder's deployment point
   const t=kind==='cat'?catTrack(cfg,SIM.lane):kind==='bot'?bottomTrack(cfg,SIM.lane):kind==='niche'?nicheTrack(cfg,SIM.lane,opts):sideTrack(cfg,SIM.lane);
-  const r={key,cfg,kind,chained,dsKey:chained?SIMZ['N:rudder'].ds:cfg.ds,pts:t.pts,nrm:t.nrm,par:t.par,area:t.area,lanes:t.lanes,transitN:t.transitN,s:0,tNow:0,slack:0};
+  const r={key,cfg,kind,chained,dsKey:chained?SIMZ['N:rudder'].ds:cfg.ds,pts:t.pts,nrm:t.nrm,par:t.par,area:t.area,wind:t.wind,shaftTurn:t.shaftTurn,shaftSet:t.shaftSet,lanes:t.lanes,transitN:t.transitN,s:0,tNow:0,slack:0};
   r.fixed=tetherFixed(r); r.fixedLen=pathLen(r.fixed);
   if(cfg.alt){ const ds=dsOf(cfg.alt), side=ds.s, dsx=(ds.x0+ds.x1)/2, ap=[], an=[], tgt=t.pts[t.transitN]||t.pts[t.pts.length-1];
     railStart(ap,an,dsx,side);
@@ -1899,14 +2088,57 @@ function buildRun(key){
   r.done=new THREE.Line(g2,new THREE.LineBasicMaterial({color:r.color})); r.done.renderOrder=8;
   g2.setDrawRange(0,0); r.frac=0;
   for(const o of [r.full,r.done]) simGroup.add(o);
+  buildRibbon(r);
   return r; }
-function disposeRun(r){ for(const o of [r.full,...(r.doneLines||[r.done]),...(r.refMarks||[])]){ simGroup.remove(o); o.geometry.dispose(); } }
+function disposeRun(r){ for(const o of [r.full,...(r.doneLines||[r.done]),...(r.refMarks||[]),...(r.ribbons||[]),...(r.tails||[]).flatMap(T=>T?[T.line,T.quad]:[])]){ simGroup.remove(o); o.geometry.dispose(); } if(r.ribG) r.ribG.dispose(); }
+// one edge of the clean band at a track point; on the rudder the band stays on the blade: none round its edges, and never
+// above the top or below the bottom of the rudder
+function bandEdge(r,p,n,sd,half,e){
+  if(r.cfg&&r.cfg.part==='rudder'){ if(Math.abs(n.z)<0.85) return p.clone().addScaledVector(n,-0.01);       // lanes run at constant depth:
+    const v=p.clone().add(new V3(0,(e?half:-half)*VS.sy,0)).addScaledVector(n,-0.01);                       // the band's width is vertical
+    v.y=clamp(v.y/VS.sy,R_BOT+0.03,R_TOP-0.03)*VS.sy; return v; }
+  return p.clone().addScaledVector(sd,e?half:-half).addScaledVector(n,-0.01); }
+// a band of clean paint one lane wide along each zone's cleaned track (shown when the hull has biofilm)
+function buildRibbon(r){ if(r.kind==='niche'&&r.cfg.part!=='rudder') return;                  // the propeller is bronze, not painted hull
+  const P=r.pts, N=r.nrm, i0=Math.max(1,r.transitN), n=P.length-i0, half=BAND_HALF(), pos=new Float32Array(n*6), col=new Float32Array(n*6), uv=new Float32Array(n*4), nor=new Float32Array(n*6), idx=[];
+  const cat=HULL.cat, cc=cat?CAT_PAINT.af:null, t=new V3(), b=new V3();
+  for(let k=0;k<n;k++){ const i=i0+k, p=P[i], nn=N[i], a=P[Math.max(i0,i-1)], c=P[Math.min(P.length-1,i+1)]; t.subVectors(c,a); b.crossVectors(nn,t).normalize();
+    for(let e=0;e<2;e++){ const q=bandEdge(r,p,nn,b,half,e), j=k*2+e; pos.set([q.x,q.y,q.z],j*3); nor.set([nn.x,nn.y,nn.z],j*3);
+      const hs=q.y/VS.sy; col.set(bandColour(q),j*3); uv.set([(q.x/VS.sx+X0)/TILE.hx,hs/TILE.hh],j*2); }
+    if(k<n-1){ const a2=k*2; idx.push(a2,a2+1,a2+2,a2+1,a2+3,a2+2); } }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3)); g.setAttribute('color',new THREE.BufferAttribute(col,3)); g.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+  g.setAttribute('normal',new THREE.BufferAttribute(nor,3)); g.setIndex(idx); r.ribG=g; r.rib0=i0; r.ribbons=[]; }          // the hull's own normals
+// the clean band looks exactly like clean hull: the hull's own paint, texture and bump, with no slime
+const RIB_MAT=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.78,metalness:0,side:THREE.DoubleSide,map:PAINT_TEX.hullMap,bumpMap:PAINT_TEX.hullBump,bumpScale:0.035,
+  polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+const BAND_HALF=()=>Math.max(0.39,SIM.lane*1.25)/2;                                  // a little wider than the lane: passes always overlap
+// the catamaran's paint at a height, as on its hull
+function catPaintAt(x,h){ const G=HULL.G, T=draught; return h<T-0.1?CAT_PAINT.af:h<T+0.22?CAT_PAINT.boot:(h>G.Dc-0.14&&x<0.83*G.L)?CAT_PAINT.strake:CAT_PAINT.top; }
+const bandColour=v=>{ if(HULL.cat){ const c=catPaintAt(v.x+HULL.G.L/2,v.y); return [c.r,c.g,c.b]; } return paintOf(v.y/VS.sy); };
+function syncRibbons(r,n){ if(!r.ribG) return; const vis=SLIME.on; const m0=HULL.cat?null:PAINT_TEX.hullMap; if(RIB_MAT.map!==m0){ RIB_MAT.map=m0; RIB_MAT.bumpMap=HULL.cat?null:PAINT_TEX.hullBump; RIB_MAT.needsUpdate=true; }
+  while(r.ribbons.length<n){ const g=new THREE.BufferGeometry(); for(const k of ['position','color','uv','normal']) g.setAttribute(k,r.ribG.attributes[k]); g.setIndex(r.ribG.index); g.setDrawRange(0,0);
+    const m=new THREE.Mesh(g,RIB_MAT); m.renderOrder=3; simGroup.add(m); r.ribbons.push(m); }
+  while(r.ribbons.length>n){ const m=r.ribbons.pop(); simGroup.remove(m); m.geometry.dispose(); }
+  for(const m of r.ribbons) m.visible=vis; }
+// the last bit of a part's cleaned line and band, from the last whole track point to exactly where the robot is
+function setTail(r,i,a,b,n){ r.tails=r.tails||[]; let T=r.tails[i];
+  if(!T){ const lg=new THREE.BufferGeometry(); lg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));
+    const qg=new THREE.BufferGeometry(); for(const [k,w] of [['position',3],['color',3],['normal',3],['uv',2]]) qg.setAttribute(k,new THREE.BufferAttribute(new Float32Array(4*w),w)); qg.setIndex([0,1,2,1,3,2]);
+    T=r.tails[i]={line:new THREE.Line(lg,r.done.material), quad:new THREE.Mesh(qg,RIB_MAT)}; T.line.renderOrder=8; T.quad.renderOrder=3; simGroup.add(T.line); simGroup.add(T.quad); }
+  const ok=!!(a&&b&&a.distanceToSquared(b)>1e-8); T.line.visible=ok&&!SIM.trHidden&&(!r.doneLines||r.doneLines[0].visible!==false); T.quad.visible=ok&&SLIME.on&&!!r.ribG;
+  if(!ok) return;
+  const lp=T.line.geometry.attributes.position; lp.setXYZ(0,a.x,a.y,a.z); lp.setXYZ(1,b.x,b.y,b.z); lp.needsUpdate=true; T.line.geometry.computeBoundingSphere();
+  if(!T.quad.visible) return;
+  const half=BAND_HALF(), t=b.clone().sub(a), sd=new V3().crossVectors(n,t).normalize(), qp=T.quad.geometry.attributes.position, qc=T.quad.geometry.attributes.color, qn=T.quad.geometry.attributes.normal, qu=T.quad.geometry.attributes.uv;
+  [a,b].forEach((p,k)=>{ for(let e=0;e<2;e++){ const v=bandEdge(r,p,n,sd,half,e), j=k*2+e, hs=v.y/VS.sy, c=bandColour(v);
+    qp.setXYZ(j,v.x,v.y,v.z); qc.setXYZ(j,c[0],c[1],c[2]); qn.setXYZ(j,n.x,n.y,n.z); qu.setXY(j,(v.x/VS.sx+X0)/TILE.hx,hs/TILE.hh); } });
+  qp.needsUpdate=qc.needsUpdate=qn.needsUpdate=qu.needsUpdate=true; T.quad.geometry.computeBoundingSphere(); }
 function syncDoneLines(r,n){ r.doneLines=r.doneLines||[r.done];
   while(r.doneLines.length<n){ const g=new THREE.BufferGeometry(); g.setAttribute('position',r.full.geometry.attributes.position); g.setDrawRange(0,0);
-    const ln=new THREE.Line(g,r.done.material); ln.renderOrder=8; simGroup.add(ln); r.doneLines.push(ln); }
+    const ln=new THREE.Line(g,r.done.material); ln.renderOrder=8; ln.visible=!SIM.trHidden; simGroup.add(ln); r.doneLines.push(ln); }
   while(r.doneLines.length>n){ const ln=r.doneLines.pop(); simGroup.remove(ln); ln.geometry.dispose(); } }
 function setRuns(keys){
-  const chainNow=keys.includes('N:rudder')&&keys.includes('N:prop');
+  const chainNow=keys.includes('N:rudder')&&keys.includes('N:prop')&&!SIM.noChain;
   const keep=[]; for(const r of SIM.runs){ if(keys.includes(r.key)&&!(r.key==='N:prop'&&!!r.chained!==chainNow)) keep.push(r); else disposeRun(r); }
   const added=[]; for(const k of keys){ if(!keep.find(r=>r.key===k)){ const r=buildRun(k); keep.push(r); added.push(r); } }
   SIM.runs=SIM_ORDER.map(k=>keep.find(r=>r.key===k)).filter(Boolean);
@@ -1921,7 +2153,7 @@ function rebuildSimKeep(){ clearTimeout(simRebuildT); simRebuildT=setTimeout(()=
 const BOT_COLS=['#111111'];
 function ensureBots(n){
   while(SIM.bots.length>n){ const b=SIM.bots.pop(); simGroup.remove(b.robot); simGroup.remove(b.tether); simGroup.remove(b.route); b.tether.geometry.dispose(); b.route.geometry.dispose(); }
-  while(SIM.bots.length<n){ const robot=makeRobot(), tg=new THREE.BufferGeometry();
+  while(SIM.bots.length<n){ const robot=makeRobot(true), tg=new THREE.BufferGeometry();
     tg.setAttribute('position',new THREE.BufferAttribute(new Float32Array((6+TN)*3),3));
     const tether=new THREE.Line(tg,new THREE.LineBasicMaterial({color:0xffffff})); tether.renderOrder=9; tether.frustumCulled=false;
     const rg=new THREE.BufferGeometry(); rg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(900*3),3)); rg.setDrawRange(0,0);
@@ -1941,35 +2173,54 @@ function altPose(r,s){ const A=r.alt; if(s>A.len) return runPose(r,r.cum[Math.ma
 function placeBot(b,r,s,snap,alt,travel,back){
   alt=!!(alt&&r.alt); const q=travel!=null?(back?directPose(r,alt,s,travel):travelPose(r,alt,s,travel)):(alt?altPose(r,s):runPose(r,s)), p=q.p, nr=q.nr;
   if(q.route){ const a=b.route.geometry.attributes.position, arr=a.array, n=Math.min(900,q.route.pts.length); for(let k=0;k<n;k++){ const v=q.route.pts[k]; arr[k*3]=v.x; arr[k*3+1]=v.y; arr[k*3+2]=v.z; }
-    a.needsUpdate=true; b.route.geometry.setDrawRange(0,n); b.route.visible=true; } else b.route.visible=false;
+    a.needsUpdate=true; b.route.geometry.setDrawRange(0,n); b.route.visible=!SIM.noRoute; } else b.route.visible=false;
   const FX=alt?r.alt.fixed:r.fixed, FL=alt?r.alt.fixedLen:r.fixedLen, RI=FX.railIdx!=null?FX.railIdx:r.railIdx;
-  _tg.subVectors(q.b,q.a).normalize(); _tg.addScaledVector(nr,-_tg.dot(nr)).normalize(); _bn.crossVectors(_tg,nr).normalize();
+  if(travel==null){ const pa=(alt?altPose(r,Math.max(0,s-0.3)):runPose(r,Math.max(0,s-0.3))).p, pb=(alt?altPose(r,s+0.3):runPose(r,s+0.3)).p; _tg.subVectors(pb,pa); }   // steer smoothly, over about its own length
+  else _tg.subVectors(q.b,q.a);
+  if(_tg.lengthSq()<1e-10) _tg.subVectors(q.b,q.a); _tg.normalize(); _tg.addScaledVector(nr,-_tg.dot(nr)).normalize();
+  // on the propeller and rudder there's no room to turn round: the robot reverses rather than spinning on the spot
+  if(r.kind==='niche'&&travel==null){ if(b.lastR===r&&b.lastTg&&_tg.dot(b.lastTg)<0) _tg.negate(); b.lastTg=(b.lastTg||new V3()).copy(_tg); } b.lastR=r;
+  _bn.crossVectors(_tg,nr).normalize();
   _mb.makeBasis(_tg,nr,_bn); b.robot.quaternion.setFromRotationMatrix(_mb); b.robot.position.copy(p);
-  const rear=p.clone().addScaledVector(_tg,-0.225).addScaledVector(nr,0.07), side=alt?dsOf(r.alt.ds).s:runSide(r);      // tether leaves from the back of the robot
+  const rear=p.clone().addScaledVector(_tg,-0.222).addScaledVector(nr,0.155), side=alt?dsOf(r.alt.ds).s:runSide(r);    // tether plugs into the black connector at the back of the spine
   let free, from;
   if(p.y>draught+0.05){ from=RI; const top=FX[from]; free=[]; for(let k=0;k<TN;k++) free.push(top.clone().lerp(rear,k/(TN-1)));
     b.tNow=pathLen(FX.slice(0,from+1))+top.distanceTo(rear); b.slack=0; }
-  else { from=FX.length-1; const P=FX[from], Sw=r.paidOut-FL, taut=drapedLen(P,rear,side,20);
-    // one hanging line from the deck edge to the robot, so the whole line moves from where it's deployed. It hangs with the
-    // slack paid out, but never less than it takes for the line to fall off the rail at least 50 degrees below horizontal
+  else { from=FX.length-1; const P=FX[from], Sw=r.paidOut-FL; b.bladeN=0;
+    // a hanging line from the deck edge, so the whole line moves from where it's deployed. It hangs with the slack paid out,
+    // but never less than it takes for the line to fall off the rail at least 50 degrees below horizontal
     const steep=ps=>{ const d=ps[1].clone().sub(ps[0]); return -d.y>=Math.tan(50*Math.PI/180)*Math.hypot(d.x,d.z); };
-    let S=Math.max(Sw,taut*1.001); free=catenary(P,rear,S,TN-1);
-    if(!steep(free)){ const cap=Math.max(Sw,taut)*2; let lo=S, hi=cap;
-      if(steep(catenary(P,rear,hi,TN-1))){ for(let k=0;k<12;k++){ const mid=(lo+hi)/2; if(steep(catenary(P,rear,mid,TN-1))) hi=mid; else lo=mid; } }
-      free=catenary(P,rear,hi,TN-1); }
-    b.tNow=FL+taut; b.slack=Math.max(0,Sw-taut); }
-  b.contact=hullContact(free,side); b.onBed=seabedClamp(free,b.contact); b.tTarget=free; b.side=side;     // seabed contact holds like hull contact
+    const hang=(Q,Sh,n)=>{ const taut=drapedLen(P,Q,side,20); let S=Math.max(Sh,taut*1.001), c=catenary(P,Q,S,n);
+      if(!steep(c)){ const cap=Math.max(Sh,taut)*2; let lo=S, hi=cap;
+        if(steep(catenary(P,Q,hi,n))){ for(let k=0;k<12;k++){ const mid=(lo+hi)/2; if(steep(catenary(P,Q,mid,n))) hi=mid; else lo=mid; } }
+        c=catenary(P,Q,hi,n); } c.taut=taut; return c; };
+    // on the propeller the robot got to its blade round the tip on its own side, so the line runs from the robot along the
+    // blade face, out round that blade's tip, and only then hangs free to the deck edge
+    const pc=W3(5.25,3.8,0), rel=rear.clone().sub(pc), rS=Math.hypot(rel.y/VS.sy,rel.z/VS.sz);
+    if(!HULL.cat&&r.cfg&&r.cfg.part==='prop'&&travel==null&&Math.abs(rel.x/VS.sx)<1.4&&rS<3.3){
+      const th=Math.atan2(rel.z/VS.sz,rel.y/VS.sy), G=W3(5.25+(rel.x>=0?0.3:-0.3),3.8+3.45*Math.cos(th),3.45*Math.sin(th)), n2=8, seg=[];
+      for(let k=1;k<=n2;k++) seg.push(G.clone().lerp(rear,k/n2).addScaledVector(nr,0.03*Math.sin(Math.PI*k/n2)));      // lying on the blade face
+      const L2=G.distanceTo(rear), c1=hang(G,Sw-L2,TN-1-n2); free=c1.concat(seg); free.a=c1.a; b.bladeN=n2;
+      b.tNow=FL+c1.taut+L2; b.slack=Math.max(0,Sw-c1.taut-L2); }
+    else { free=hang(rear,Sw,TN-1); b.tNow=FL+free.taut; b.slack=Math.max(0,Sw-free.taut); } }
+  b.catA=free.a!=null?free.a:Infinity; b.bedT=new Uint8Array(free.length);
+  const keep=b.bladeN?free.slice(-b.bladeN).map(v=>v.clone()):null;
+  b.contact=hullContact(free,side);
+  if(keep) keep.forEach((v,k)=>{ const i=free.length-b.bladeN+k; free[i].copy(v); b.contact[i]=1; });             // the part on the blade lies there, held by friction
+  b.onBed=seabedClamp(free,b.contact,b.bedT); b.tTarget=free; b.side=side;
   if(snap||!b.tCur||b.from!==from||b.run!==r||b.alt!==alt){ b.tCur=free.map(v=>v.clone()); b.from=from; b.run=r; b.alt=alt; b.fixed=FX; writeTether(b); }
 }
 // each frame the displayed tether eases toward its new shape; points resting on the hull move slowly, as if held by friction
 // ---- seafloor: an optional seabed at a set water depth; slack tether that would hang below it lies on it ----
-const SEABED={on:false,depth:16,mesh:null};
+const SEABED={on:false,depth:16,mesh:null,type:'sand'};
 const seabedY=()=>draught-SEABED.depth;                                            // world height of the seabed
-function seabedClamp(pts,flags){ if(!SEABED.on) return 0; const yb=seabedY()+0.05; let len=0;
-  for(let i=1;i<pts.length-1;i++) if(pts[i].y<yb){ pts[i].y=yb; if(flags) flags[i]=1; }
+// tether-on-seabed friction coefficients, along the line and sideways (sideways is higher: the line has to plough)
+const SEABED_MU={mud:[0.25,0.45],sand:[0.5,0.8],rock:[0.7,1.0]};
+function seabedClamp(pts,flags,bed){ if(!SEABED.on) return 0; const yb=seabedY()+0.05; let len=0;
+  for(let i=1;i<pts.length-1;i++) if(pts[i].y<yb){ pts[i].y=yb; if(flags) flags[i]=1; if(bed) bed[i]=1; }
   for(let i=1;i<pts.length;i++) if(pts[i].y<=yb+1e-4&&pts[i-1].y<=yb+1e-4) len+=pts[i].distanceTo(pts[i-1]);
   return len; }
-function updateSeabed(){ const on=$('sbOn').checked, d=clamp(Math.round(parseFloat($('sbDepth').value)||16),1,300); SEABED.on=on; SEABED.depth=d; $('sbDepth').value=d;
+function updateSeabed(){ const on=$('sbOn').checked, d=clamp(Math.round(parseFloat($('sbDepth').value)||16),1,300); SEABED.on=on; SEABED.depth=d; $('sbDepth').value=d; SEABED.type=$('sbType').value;
   if(on&&!SEABED.mesh){ const cv=document.createElement('canvas'); cv.width=cv.height=256; const c=cv.getContext('2d'); c.fillStyle='#8c8064'; c.fillRect(0,0,256,256);
     for(let i=0;i<5000;i++){ const v=Math.random(); c.fillStyle=`rgba(${v>0.5?190:70},${v>0.5?175:62},${v>0.5?140:45},${0.05+Math.random()*0.12})`; c.fillRect(Math.random()*256,Math.random()*256,1+Math.random()*3,1+Math.random()*3); }
     const tex=new THREE.CanvasTexture(cv); tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(220,220);
@@ -1977,7 +2228,8 @@ function updateSeabed(){ const on=$('sbOn').checked, d=clamp(Math.round(parseFlo
     SEABED.mesh.rotation.x=-Math.PI/2; SEABED.mesh.userData.world=true; scene.add(SEABED.mesh); }
   if(SEABED.mesh){ SEABED.mesh.visible=on; SEABED.mesh.position.y=seabedY(); }
   const ukc=d-draught, el=$('sbUkc');
-  el.textContent=on?(ukc<0?`Aground: the water is ${(-ukc).toFixed(1)} m shallower than the draught.`:`Under-keel clearance ${ukc.toFixed(1)} m${ukc<1?': too tight for robots and tethers under the hull.':'. Slack tether resting on the seabed is shown on the robots.'}`):'';
+  const mu=SEABED_MU[SEABED.type], tn={mud:'Mud or clay',sand:'Sand',rock:'Rock or shell'}[SEABED.type];
+  el.textContent=on?(ukc<0?`Aground: the water is ${(-ukc).toFixed(1)} m shallower than the draught.`:`Under-keel clearance ${ukc.toFixed(1)} m${ukc<1?': too tight for robots and tethers under the hull.':'.'} ${tn}: tether friction about ${mu[0]} along the line and ${mu[1]} sideways. Line lying on the bottom stays put until the pull at its touchdown point beats that friction.${SEABED.type==='rock'?' Rock and shell also snag and abrade the tether.':''}`):'';
   el.classList.toggle('warn',on&&ukc<1);
   if(SIM.tl) applyTimeline(true); }
 function easeTether(b){ const T=b.tTarget, C=b.tCur; if(!T) return;
@@ -1985,7 +2237,21 @@ function easeTether(b){ const T=b.tTarget, C=b.tCur; if(!T) return;
   // When the robot moves fast (high playback speed) the whole line tightens up so it never trails a straight piece.
   const end=T[TN-1], moved=b.lastEnd?b.lastEnd.distanceTo(end):0; b.lastEnd=(b.lastEnd||new V3()).copy(end);
   const boost=Math.min(1,moved/1.5);
-  for(let k=1;k<TN-1;k++){ const u=k/(TN-1), w0=b.contact[k]?0.06:0.22, tight=Math.max(u*u*u,boost); C[k].lerp(T[k],w0+(1-w0)*tight); }
+  // Line lying on the seabed is held by friction: it stays where it was laid, and the line lifts off or lays down at its
+  // touchdown point. It only moves when the pull there beats the friction of the laid length. The horizontal pull of a
+  // hanging line is its weight in water per metre times the catenary parameter a; the friction is mu times that same weight
+  // times the laid length, so the weight cancels: it slides along its own length when a > mu(along) x laid length, and is
+  // dragged sideways only when a > mu(sideways) x laid length.
+  const bed=SEABED.on, yb=bed?seabedY()+0.05:-1e9, mu=SEABED_MU[SEABED.type]||SEABED_MU.sand;
+  let Lbed=0; if(bed) for(let k=1;k<TN;k++) if(C[k].y<=yb+0.02&&C[k-1].y<=yb+0.02) Lbed+=C[k].distanceTo(C[k-1]);
+  const a=b.catA==null?Infinity:b.catA, slideAx=a>mu[0]*Lbed, slideLat=a>mu[1]*Lbed;
+  b.onBedNow=Lbed; b.bedState=Lbed<0.5?'':(slideLat?'being dragged sideways':slideAx?'sliding along its length':'held by friction');
+  for(let k=1;k<TN-1;k++){
+    if(bed&&b.bedT&&b.bedT[k]&&C[k].y<=yb+0.02){                                        // lying on the bottom, and still meant to
+      if(slideLat) C[k].lerp(T[k],0.05);
+      else if(slideAx){ const t=C[k+1].clone().sub(C[k-1]), l=t.length(); if(l>1e-6){ t.divideScalar(l); C[k].addScaledVector(t,T[k].clone().sub(C[k]).dot(t)*0.05); } }
+      continue; }                                                                           // otherwise it stays where it lies
+    const u=k/(TN-1), w0=b.contact[k]?0.06:0.22, tight=Math.max(u*u*u,boost); C[k].lerp(T[k],w0+(1-w0)*tight); }
   C[0].copy(T[0]); C[TN-1].copy(T[TN-1]); hullContact(C,b.side); seabedClamp(C); writeTether(b); }
 function writeTether(b){ const a=b.tether.geometry.attributes.position, arr=a.array; let j=0;
   for(let k=0;k<=b.from;k++){ const q=b.fixed[k]; arr[j++]=q.x; arr[j++]=q.y; arr[j++]=q.z; }
@@ -2028,12 +2294,22 @@ function applyTimeline(snap){
   if(!SIM.tl){ SIM.bots.forEach(b=>{ b.robot.visible=b.tether.visible=b.route.visible=false; }); return; }
   const T=SIM.T;
   for(const r of SIM.runs){ const pts=partsOf(r.key), s0=r.cum[Math.max(0,r.transitN-1)]; syncDoneLines(r,pts.length); let tot=0;
+    if(r.ribG) syncRibbons(r,pts.length);
     pts.forEach((pt,i)=>{ const q=partProg(r.key,i,T), ln=r.doneLines[i]; tot+=q*(pt.b-pt.a);
-      if(q<=0){ ln.geometry.setDrawRange(0,0); return; }
-      const fA=pt.dir>0?pt.a:partPos(pt,q), fB=pt.dir>0?partPos(pt,q):pt.b, iA=runPose(r,s0+fA*r.cleanLen).i, iB=runPose(r,s0+fB*r.cleanLen).i+1;
-      ln.geometry.setDrawRange(iA,Math.max(2,iB-iA+1)); });
+      if(q<=0){ ln.geometry.setDrawRange(0,0); if(r.ribbons&&r.ribbons[i]) r.ribbons[i].geometry.setDrawRange(0,0); setTail(r,i,null); return; }
+      const fA=pt.dir>0?pt.a:partPos(pt,q), fB=pt.dir>0?partPos(pt,q):pt.b, A=runPose(r,s0+fA*r.cleanLen), B=runPose(r,s0+fB*r.cleanLen);
+      // whole segments behind the robot, then a short tail to exactly where it is: cleaning never shows ahead of it
+      let i0, i1, ta, tb, tn; if(pt.dir>0){ i0=A.i; i1=B.i; ta=r.pts[B.i]; tb=B.p; tn=B.nr; } else { i0=A.i+1; i1=B.i+1; ta=A.p; tb=r.pts[A.i+1]; tn=A.nr; }
+      ln.geometry.setDrawRange(i0,i1>i0?i1-i0+1:0);
+      if(r.ribbons&&r.ribbons[i]){ const a=Math.max(0,i0-r.rib0), z=Math.max(0,i1-r.rib0); r.ribbons[i].geometry.setDrawRange(a*6,Math.max(0,z-a)*6); }
+      setTail(r,i,ta,tb,tn); });
     r.frac=tot; }
   SIM.bots.forEach((b,j)=>{ const st=botAt(j,T); b.state=st; b.robot.visible=b.tether.visible=!!st; if(!st) b.route.visible=false; if(st) placeBot(b,st.r,st.s,snap,st.alt,st.travel,st.back); });
+  // halfway through the propeller clean the shaft is turned 180° on the turning gear while the robot waits clear: turn the model with it
+  { const r=SIM.runs.find(q=>q.shaftTurn); let rot=0;
+    if(r){ rot=r.shaftSet||0; const s0=r.cum[r.shaftTurn[0]], s1=r.cum[r.shaftTurn[1]];
+      for(const b of SIM.bots){ const st=b.state; if(st&&st.r===r&&st.s!=null&&st.travel==null) rot+=Math.PI*clamp((st.s-s0)/Math.max(1e-6,s1-s0),0,1); } }
+    propeller.rotation.x=rot; }
 }
 function updatePlayhead(){ const T=SIM.T, tl=SIM.tl;
   document.querySelectorAll('#planOut .gw').forEach((el,i)=>{ const ph=el.querySelector('.gplay'); if(!ph||!tl) return;
@@ -2042,14 +2318,14 @@ function updatePlayhead(){ const T=SIM.T, tl=SIM.tl;
 // negatively buoyant tether between two points with length S: hangs in the vertical plane through them
 function catenary(A,Bp,S,n){
   const dx=Bp.x-A.x, dz=Bp.z-A.z, h=Math.hypot(dx,dz), v=Bp.y-A.y, chord=Math.hypot(h,v), pts=[];
-  if(S<=chord+0.02){ for(let i=0;i<=n;i++) pts.push(A.clone().lerp(Bp,i/n)); return pts; }
+  if(S<=chord+0.02){ for(let i=0;i<=n;i++) pts.push(A.clone().lerp(Bp,i/n)); pts.a=Infinity; return pts; }            // taut: no sag
   if(h<0.3){ const low=(A.y+Bp.y-S)/2;
-    for(let i=0;i<=n;i++){ const t=i/n, y=t<0.5?A.y+(low-A.y)*t*2:low+(Bp.y-low)*(t-0.5)*2; pts.push(new V3(A.x+dx*t,y,A.z+dz*t)); } return pts; }
+    for(let i=0;i<=n;i++){ const t=i/n, y=t<0.5?A.y+(low-A.y)*t*2:low+(Bp.y-low)*(t-0.5)*2; pts.push(new V3(A.x+dx*t,y,A.z+dz*t)); } pts.a=0.3; return pts; }
   const L=Math.sqrt(S*S-v*v); let lo=1e-3, hi=1e6;
   for(let k=0;k<90;k++){ const a=Math.sqrt(lo*hi); if(2*a*Math.sinh(h/(2*a))>L) lo=a; else hi=a; }
   const a=Math.sqrt(lo*hi), x1=h/2-a*Math.atanh(v/S), y0=a*Math.cosh(-x1/a);
   for(let i=0;i<=n;i++){ const t=i/n; pts.push(new V3(A.x+dx*t, A.y+a*Math.cosh((h*t-x1)/a)-y0, A.z+dz*t)); }
-  return pts;
+  pts.a=a; return pts;
 }
 function fmtTime(sec){ const h=Math.floor(sec/3600), m=Math.round((sec%3600)/60); return h?`${h} h ${String(m).padStart(2,'0')} min`:`${m} min`; }
 const runTotal=r=>r.cum[r.cum.length-1];
@@ -2071,14 +2347,14 @@ function updateSimUI(){
     `<div class="dash-h">Robots now (${nb})</div><div class="zrows">`+
     SIM.bots.map((b,j)=>{ const s=b.state; if(!s) return `<div class="zrow"><div class="zrow-top"><b>R${j+1}</b><span>Not needed for these zones</span></div></div>`;
       return `<div class="zrow"><div class="zrow-top"><b><i style="background:${s.r.color}"></i>R${j+1}</b><span>${s.status}</span></div>`+
-        (s.busy?`<div class="zrow-meta"><span class="t">Tether ${Math.round(b.tNow||0)} of ${s.r.paidOut} m paid out at DP${(s.alt&&s.r.alt?s.r.alt.ds:(s.r.dsKey||s.r.cfg.ds)).slice(2)}</span><span>${Math.round(b.slack||0)} m slack${b.onBed>0.5?`, ${Math.round(b.onBed)} m on the seabed`:''}</span></div>`:'')+`</div>`; }).join('')+
+        (s.busy?`<div class="zrow-meta"><span class="t">Tether ${Math.round(b.tNow||0)} of ${s.r.paidOut} m paid out at DP${(s.alt&&s.r.alt?s.r.alt.ds:(s.r.dsKey||s.r.cfg.ds)).slice(2)}</span><span>${Math.round(b.slack||0)} m slack${(b.onBedNow||0)>0.5?`, ${Math.round(b.onBedNow)} m on the seabed, ${b.bedState}`:''}</span></div>`:'')+`</div>`; }).join('')+
     `</div>`+
     `<div class="dash-h">Zones</div><div class="zrows">`+
     R.map(r=>{ const f=r.frac||0, warn=r.maxT>TETHER;
       const nk=partsOf(r.key).length;
       return `<div class="zrow${warn?' warn':''}"><div class="zrow-top"><b><i style="background:${r.color}"></i>${r.cfg.short} <em>DP${(r.dsKey||r.cfg.ds).slice(2)}${r.cfg.alt?' and '+r.cfg.alt.slice(2):''}${nk>1?`, ${nk} robots`:''}</em></b><span>${f>=0.999?'Done':Math.round(f*100)+'%'}</span></div>`+
         `<div class="dash-bar"><i style="width:${(f*100).toFixed(1)}%;background:${r.color}"></i></div>`+
-        `<div class="zrow-meta"><span class="t">${r.paidOut} m tether paid out${warn?' (beyond 125 m)':''}</span><span>${fmtA(zoneArea(r))} m²</span></div></div>`; }).join('')+
+        `<div class="zrow-meta"><span class="t">${r.paidOut} m tether paid out${warn?' (beyond 125 m)':''}${r.shaftTurn?`; works only the half on its own side, so the tether never crosses the shaft; includes the hub and boss cap. Turning gear: ${Math.abs(r.shaftSet*180/Math.PI)<3?`two blades already sit 45° either side of DP${(r.dsKey||r.cfg.ds).slice(2)}'s side`:`first turn the shaft ${Math.abs(Math.round(r.shaftSet*180/Math.PI))}° ${r.shaftSet>=0?'clockwise':'anticlockwise'} (looking forward from astern) so two blades sit 45° either side of DP${(r.dsKey||r.cfg.ds).slice(2)}'s side`}, then turn it 180° halfway while the robot waits clear`:''}</span><span>${fmtA(zoneArea(r))} m²</span></div></div>`; }).join('')+
     `</div>`+
     (over.length?`<p class="calc-warn">${over.map(r=>r.cfg.short).join(', ')}: the furthest point is beyond the ${TETHER} m tether. Move the deployment point or split the zone.</p>`:'');
   updatePlayhead();
@@ -2121,7 +2397,7 @@ function planScheduleCore(P){
   // order: bow, stern and niche areas first, then the vertical side faces, then the flat bottom
   const pri=k=>SIMZ[k].pri!=null?SIMZ[k].pri:(/^(bow|stern|N:)/.test(k)?0:(/^B:/.test(k)?2:1));
   tasks.sort((x,y)=>pri(x.key)-pri(y.key)||SIM_ORDER.indexOf(x.key)-SIM_ORDER.indexOf(y.key)||x.part-y.part); tasks.forEach(t=>t.left=t.work);
-  const chain=tasks.some(t=>t.key==='N:rudder')&&tasks.some(t=>t.key==='N:prop'); let rudderDone=!chain;
+  const chain=tasks.some(t=>t.key==='N:rudder')&&tasks.some(t=>t.key==='N:prop')&&!SIM.noChain; let rudderDone=!chain;
   const queue=tasks.slice(), windows=[];
   while(queue.length){
     if(windows.length>=60) return {error:'More than 60 windows needed: lengthen the window or add robots.'};
@@ -2172,7 +2448,7 @@ function planScheduleCore(P){
       // a launch (Seawolf start, system test, deploy) at the start of cleaning and if the robot moves to another deployment point;
       // the next zone from the same deployment point is just a drive under water: back past the deployment point and out
       const task=queue.splice(qi,1)[0], rl=(!rb.seg.length||rb.dp!==task.dp)?P.relaunch:0, err=runTask(rb,task,rl,rl?0:(rb.lastTr||0)); if(err) return err;
-      if(task.key==='N:rudder'&&task.left<=1e-6){ rudderDone=true;                // same robot carries straight on to the propeller
+      if(chain&&task.key==='N:rudder'&&task.left<=1e-6){ rudderDone=true;         // same robot carries straight on to the propeller
         const pi=queue.findIndex(tk=>tk.key==='N:prop'); if(pi>=0&&!rb.done){ const pt=queue.splice(pi,1)[0], R2=pt.run, e2=runTask(rb,pt,0,0,R2.cum[Math.max(0,R2.transitN-1)]/SIM.speed/3600); if(e2) return e2; } } }
     queue.unshift(...carry);
     if(!progress) return {error:'Nothing fits in a window after setup, pack-down and the first launch: lengthen the window.'};
@@ -2463,6 +2739,7 @@ controls.addEventListener('start',()=>{ anim=null; setViewPressed(null); });
 function fitDist(hw,hh){ const t=Math.tan(THREE.MathUtils.degToRad(camera.fov)/2); return Math.max(hh/t, hw/(t*camera.aspect))*1.06; }
 const VIEWS={
   quarter:{dir:[0.3,-0.36,0.88],target:[0,6,0],half:[94,30]},
+  bowq:{dir:[0.86,-0.24,0.45],target:[12,13,0],dist:180},                   // bow quarter from below and ahead, looking aft along the hull
   port:{dir:[0,0.06,-1],target:[0,10,0],half:[96,22]},
   stbd:{dir:[0,0.06,1],target:[0,10,0],half:[96,22]},
   bottom:{dir:[0.0,-1,0.03],target:[0,1,0],half:[96,20]},
@@ -2479,7 +2756,7 @@ function goView(name,instant){
   if(instant){ camera.position.copy(pos); controls.target.copy(tg); controls.update(); } else flyTo(pos,tg);
   setViewPressed(name);
 }
-function setViewPressed(name){ document.querySelectorAll('#views button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===name))); }
+function setViewPressed(name){ document.querySelectorAll('#views button[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===name))); }
 
 /* ================= UI ================= */
 const $=id=>document.getElementById(id);
@@ -2558,7 +2835,147 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && selected) select
 function setSheet(open){ panel.classList.toggle('collapsed',!open); $('panelToggle').setAttribute('aria-expanded',String(open)); setTimeout(resize,30); }
 $('panelToggle').onclick=()=>setSheet(panel.classList.contains('collapsed'));
 
-$('views').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; if(b.dataset.act==='vessel') openVessel(); else goView(b.dataset.view); });
+$('views').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; if(b.dataset.act==='demo'){ DEMO.on?stopDemo():startDemo(); return; } if(DEMO.on) stopDemo(); if(b.dataset.act==='vessel') openVessel(); else if(b.dataset.act==='night') setNight(!NIGHT); else goView(b.dataset.view); });
+// day and night: night darkens the sky, lights and water so the robots' own lights stand out
+function setNight(on){ NIGHT=on; document.querySelector('.stage').classList.toggle('night',on); 
+  hemi.intensity=on?0.16:0.78; hemi.color.set(on?0x9fb3d6:0xffffff); hemi.groundColor.set(on?0x0b1420:0x5d6c78);
+  sun.intensity=on?0.12:0.62; sun.color.set(on?0xa9bde6:0xffffff); under.intensity=on?0.05:0.42; under2.intensity=on?0.03:0.22;
+  water.material.color.set(on?0x2f4a63:0xffffff); if(SEABED.mesh) SEABED.mesh.material.color.set(on?0x55606a:0xffffff); }
+// ---- cinematic demo: four robots on four zones, day then night, close-ups tracking along the hull and wide panning shots ----
+const DEMO={on:false};
+const easeIO=u=>u<0.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
+function demoShots(){ const cat=HULL.cat, Lw=cat?HULL.G.L:L*VS.sx, Bw=cat?HULL.G.c+HULL.G.b:BH*VS.sz, T=draught, k=Lw/183, nm=VESSEL.name||'the vessel';
+  // the propeller and where to film it from: aft and out to the side of its robot's deployment point
+  const pc=cat?CW(HULL.G.xp,HULL.G.hp,-HULL.G.c):W3(5.25,3.8,0), pr=cat?2.2:9*vsAvg(), ps=-1;
+  const propCam=(b0,b1,up)=>u=>{ const b=b0+(b1-b0)*easeIO(u); return {pos:pc.clone().add(new V3(-pr*Math.cos(b),-up*pr,ps*pr*Math.sin(b))), tg:pc.clone().add(new V3(0,-0.05*pr,ps*0.12*pr))}; };
+  DEMO.pc=pc; DEMO.pr=pr; DEMO.ps=ps;
+  const wideA=0.55, wideR=Lw*0.9, widePos=new V3(Math.cos(wideA)*wideR,T-Lw*0.16,Math.sin(wideA)*wideR), wideTg=new V3(Lw*0.04,T*0.55,0);
+  DEMO.widePos=widePos; DEMO.wideTg=wideTg;
+  return [
+    {dur:9, night:false, mult:10, reveal:true, cap:'Hullbot Vessel Plan', sub:`Four H6.3 robots cleaning a fouled ${nm}, one from each deployment point`, widePos, wideTg},
+    {dur:7, night:false, mult:40, cap:'Working the hull', sub:'DP1 on the starboard side, DP2 on the rudder, DP3 on the port side, DP4 on the propeller',
+      cam:u=>{ const x=(-0.44+0.88*easeIO(u))*Lw; return {pos:new V3(x,T*0.35,Bw+34*k+5), tg:new V3(x+12*k,T*0.45,Bw*0.85)}; }},
+    {dur:7, night:false, mult:4, follow:0, orbit:0.9, cap:'Close up on the hull', sub:'Brush drums at 200 rpm, lanes 35 cm apart at constant depth'},
+    {dur:6, night:false, mult:4, follow:2, orbit:-0.7, cap:'Tethered from the deck edge', sub:'DP3 on the port side: the line hangs from its deployment point and follows the robot'},
+    {dur:8, night:false, mult:2, rudder:true, cap:'Cleaning the rudder', sub:'Lanes along the blade at constant depth, both faces, worked from DP2',
+      cam:u=>({pos:widePos.clone(), tg:wideTg.clone()})},
+    {dur:7, night:false, mult:1.3, prop:[0.25*Math.PI,0.55*Math.PI,0.15], pass:0, cap:'Polishing the propeller', sub:'Blade by blade from DP4, its tether kept clear of the shaft',
+      cam:propCam(0.25*Math.PI,0.55*Math.PI,0.15)},
+    {dur:7, night:true, mult:40, cap:'Night clean', sub:'LED lights pick out the hull around each robot',
+      cam:u=>{ const a=0.55+0.5*easeIO(u), r=Lw*0.62; return {pos:new V3(Math.cos(a)*r+Lw*0.05,T-Lw*0.2,Math.sin(a)*r), tg:new V3(Lw*0.02,T*0.5,Bw*0.6)}; }},
+    {dur:8, night:true, mult:5, corner:true, cap:'Round the corner', sub:'Turning at the end of a lane at the forward shoulder and heading straight for the camera',
+      cam:u=>{ const a=0.55+0.5*easeIO(u), r=Lw*0.62; return {pos:new V3(Math.cos(a)*r+Lw*0.05,T-Lw*0.2,Math.sin(a)*r), tg:new V3(Lw*0.02,T*0.5,Bw*0.6)}; }},
+    {dur:7, night:true, mult:4, follow:2, orbit:0.8, cap:'Lights on the plating', sub:'Front spotlights light the hull ahead of the robot'},
+    {dur:10, night:false, mult:1400, sideLapse:true, cap:'Working down the side', sub:'Lane by lane at constant depth, from the waterline down',
+      cam:u=>{ const C=DEMO.side; if(!C) return {pos:widePos.clone(),tg:wideTg.clone()}; const x=C.x0+(C.x1-C.x0)*(0.32+0.36*easeIO(u));
+        return {pos:new V3(x-C.d*0.25,C.ym-C.d*0.06,C.z+C.s*C.d), tg:new V3(x+C.d*0.1,C.ym,C.z)}; }},
+    {dur:8, night:false, mult:60, clean:true, cap:'Clean hull, job done', sub:'Planned, simulated and briefed before the job: zones, robots, batteries and tethers',
+      cam:u=>{ const a=1.2-0.5*easeIO(u), r=Lw*(0.75+0.35*easeIO(u)); return {pos:new V3(Math.cos(a)*r,T-Lw*0.1+Lw*0.12*easeIO(u),Math.sin(a)*r), tg:new V3(0,T*0.7,0)}; }}
+  ]; }
+function startDemo(){ if(DEMO.on) return; const slimeWas=[SLIME.on,SLIME.level];        // the user's biofilm setting, put back afterwards
+  const cat=HULL.cat, keys=cat?['K:SMD','K:SN','K:PMD','K:PN']:['S:fwd','N:rudder','P:fwd','N:prop'];   // one robot from each of DP1 to DP4
+  SIM.noChain=true;                                                                // the propeller stays DP4's own job
+  SLIME.on=true; SLIME.level=0.95;                                                 // start with a fouled hull
+  DEMO.saved={slime:slimeWas, keys:simKeys(), robots:$('pRobots').value, night:NIGHT, mult:SIM.mult, multSel:$('simMult').value, follow:$('simFollow').checked,
+    sheetOpen:!panel.classList.contains('collapsed'), cam:camera.position.clone(), tg:controls.target.clone()};
+  document.querySelectorAll('#simZones input').forEach(c=>c.checked=keys.includes(c.value)); $('simZones').dispatchEvent(new Event('change'));
+  $('pRobots').value='4'; $('pRobots').dispatchEvent(new Event('input')); $('simFollow').checked=false;
+  if(!SIM.tl) return;
+  // start where all four robots are cleaning
+  let T0=0; for(let t=0;t<SIM.tl.total;t+=0.01){ let ok=true; for(let j=0;j<SIM.bots.length;j++){ const a=botAt(j,t), b=botAt(j,t+0.05); if(!a||!b||!/^Cleaning/.test(a.status)||!/^Cleaning/.test(b.status)){ ok=false; break; } } if(ok){ T0=t; break; } }
+  DEMO.T0=T0; DEMO.shots=demoShots(); DEMO.i=-1; DEMO.on=true; DEMO.start=performance.now();
+  // the robots to follow: the side-zone robots first, then the bow and stern ones
+  const order=cat?['K:SMD','K:SN','K:PMD','K:PN']:['S:fwd','N:rudder','P:fwd','N:prop'];
+  DEMO.focus=order.map(key=>SIM.bots.findIndex((b,j)=>{ const st=botAt(j,T0+0.05); return st&&st.r&&st.r.key===key; })).filter(j=>j>=0);
+  for(const r of SIM.runs){ r.full.visible=false; for(const m of r.refMarks||[]) m.visible=false; }   // planned tracks and markers off; cleaned lanes still show
+  // moments when the propeller robot is part-way across the aft face of a blade (clear to film from aft and to the side)
+  DEMO.passes=[]; { const j=DEMO.focus[3], pc=DEMO.pc||(HULL.cat?CW(HULL.G.xp,HULL.G.hp,-HULL.G.c):W3(5.25,3.8,0)), sc=HULL.cat?0.13:vsAvg(); let run=null;
+    if(j!=null&&j>=0) for(let t=T0;t<SIM.tl.total;t+=0.0005){ const st=botAt(j,t); let on=false;
+      if(st&&st.r&&/^Cleaning/.test(st.status)&&st.travel==null){ const q=runPose(st.r,st.s), rad=Math.hypot(q.p.y-pc.y,q.p.z-pc.z);
+        on=Math.abs(q.p.x-pc.x)<1.3*sc&&rad>1.1*sc&&q.nr.x<-0.5&&q.p.y<pc.y-0.4*sc; }              // aft face of a lower blade, off the hub, open water round the camera
+      if(on){ if(!run) run=[t,t]; else run[1]=t; } else if(run){ if(run[1]-run[0]>0.004) DEMO.passes.push(run[0]+0.0002); run=null; }
+      if(DEMO.passes.length>=6) break; } }
+  // the side zone of the first robot (starboard forward): its extent along the hull and down from the waterline, for the time-lapse
+  DEMO.side=null; { const j=DEMO.focus[0], st=j!=null&&j>=0?botAt(j,T0+0.01):null, r=st&&st.r;
+    if(r){ let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9,zm=0; for(let i=r.transitN;i<r.pts.length;i++){ const q=r.pts[i]; x0=Math.min(x0,q.x); x1=Math.max(x1,q.x); y0=Math.min(y0,q.y); y1=Math.max(y1,q.y); if(Math.abs(q.z)>Math.abs(zm)) zm=q.z; }
+      const s=Math.sign(zm)||1, d=Math.max(14,(y1-y0)*2.7); DEMO.side={x0,x1,ym:(y0+y1)/2,z:zm,s,d}; } }
+  // the rudder robot at the start of a lane along the blade, partway down the rudder
+  DEMO.rudderT=null; { const j=DEMO.focus[1]; if(j!=null&&j>=0&&!HULL.cat){ const ends=[R_LE,R_LE-R_C], starts=[];
+    for(let t=T0;t<SIM.tl.total&&starts.length<8;t+=0.0002){ const st=botAt(j,t); if(!st||!st.r||st.r.key!=='N:rudder'||!/^Cleaning/.test(st.status)) continue;
+      const q=runPose(st.r,st.s), xs=q.p.x/VS.sx+X0; if(Math.abs(q.nr.z)<0.9) continue;
+      const e=ends.find(x=>Math.abs(xs-x)<0.3); if(e==null) continue; const st2=botAt(j,t+0.001); if(!st2) continue;
+      const xs2=runPose(st2.r,st2.s).p.x/VS.sx+X0; if(Math.abs(xs2-e)>Math.abs(xs-e)+0.05){ starts.push(t); t+=0.01; } }
+    DEMO.rudderT=starts.length?starts[Math.min(2,starts.length-1)]:null; } }
+  // the forward-side robot at the forward end of one of its lanes, where the hull curves in to the bow: the camera waits low on
+  // the hull a few metres along the next lane, and the robot comes round the turn towards it
+  DEMO.corner=null; { const j=DEMO.focus[0], st0=j!=null&&j>=0?botAt(j,T0+0.01):null, r=st0&&st0.r;
+    if(r&&st0.s!=null){ const P=r.pts; let xmax=-1e9, iT=-1; for(let i=r.transitN;i<P.length;i++) xmax=Math.max(xmax,P[i].x);
+      for(let i=Math.max(r.transitN+1,1);i<P.length-1;i++){ if(r.cum[i]<st0.s+6) continue; if(P[i].x>=P[i-1].x&&P[i].x>=P[i+1].x&&P[i].x>xmax-3*vsAvg()){ iT=i; break; } }
+      if(iT>0){ const sT=r.cum[iT]; let k=iT; while(k<P.length-2&&r.cum[k]<sT+6) k++;
+        const n=r.nrm[k].clone().normalize(), dl=P[k+1].clone().sub(P[k]).normalize(), pos=P[k].clone().addScaledVector(n,1.1).add(new V3(0,-0.15,0));
+        let tS=null; for(let t=T0;t<SIM.tl.total;t+=0.0002){ const st=botAt(j,t); if(st&&st.r===r&&st.s!=null&&st.s>=sT-3.5){ tS=t; break; } }
+        if(tS!=null) DEMO.corner={T:tS,pos,tg:P[iT].clone(),dl}; } } }
+  setSheet(false); controls.enabled=false; select(null); SIM.T=T0; SIM.playing=true; applyTimeline(true);
+  $('demoStop').hidden=false; setViewPressed(''); }
+function stopDemo(){ if(!DEMO.on) return; DEMO.on=false; SIM.noChain=false; [SLIME.on,SLIME.level]=DEMO.saved.slime; const sv=DEMO.saved, cap=$('demoCap'); cap.classList.remove('show');
+  SIM.playing=false; controls.enabled=true;
+  document.querySelectorAll('#simZones input').forEach(c=>c.checked=sv.keys.includes(c.value)); $('simZones').dispatchEvent(new Event('change'));
+  $('pRobots').value=sv.robots; $('pRobots').dispatchEvent(new Event('input'));
+  SIM.mult=sv.mult; $('simMult').value=sv.multSel; $('simFollow').checked=sv.follow; if(NIGHT!==sv.night) setNight(sv.night);
+  SIM.noRoute=false; SIM.trHidden=false;
+  for(const r of SIM.runs){ r.full.visible=true; for(const m of r.refMarks||[]) m.visible=true; for(const o of (r.doneLines||[r.done])) o.visible=true; }
+  setSheet(sv.sheetOpen); flyTo(sv.cam,sv.tg);
+  $('demoStop').hidden=true; }
+function demoFrame(now){ const shots=DEMO.shots, total=shots.reduce((a,s)=>a+s.dur,0); let t=((now-DEMO.start)/1000)%total, i=0;
+  while(t>shots[i].dur){ t-=shots[i].dur; i++; }
+  const sh=shots[i], u=t/sh.dur, cap=$('demoCap');
+  if(i!==DEMO.i){                                                                   // a cut to the next shot
+    if(i===0&&DEMO.i!==-1){ SIM.T=DEMO.T0; applyTimeline(true); }                    // loop: back to the start of the clean
+    DEMO.i=i; DEMO.cut=true; if(NIGHT!==sh.night) setNight(sh.night); SIM.mult=sh.mult; SIM.playing=true;
+    const fresh=j=>{ const b=SIM.bots[j]; if(b){ b.lastTg=null; b.lastR=null; } };                    // face the direction it's about to travel
+    if(sh.prop&&DEMO.passes.length){ SIM.T=DEMO.passes[Math.min(sh.pass||0,DEMO.passes.length-1)]; fresh(DEMO.focus[3]); applyTimeline(true); }   // start of a blade pass
+    if(sh.rudder&&DEMO.rudderT!=null){ SIM.T=DEMO.rudderT; fresh(DEMO.focus[1]); applyTimeline(true); }                                              // start of a rudder lane
+    if(sh.reveal){ SLIME.on=true; SLIME.level=0.95; SIM.T=DEMO.T0; applyTimeline(true); }
+    if(sh.corner&&DEMO.corner){ SIM.T=DEMO.corner.T; applyTimeline(true); }                                              // just before the turn
+    if(sh.sideLapse){ SIM.T=DEMO.T0; applyTimeline(true); }                                                                // the side fouled, then cleaned lane by lane
+    const quiet=!!(sh.prop||sh.follow!=null||sh.corner||sh.rudder||sh.reveal||sh.sideLapse||sh.clean); SIM.noRoute=quiet; SIM.trHidden=quiet;                    // close shots: no track or route lines
+    for(const r of SIM.runs) for(const o of (r.doneLines||[r.done])) o.visible=!quiet;
+    cap.classList.remove('show'); }
+  if(sh.dur-t<0.9) cap.classList.remove('show');
+  if(sh.clean){ const f=easeIO(clamp((u-0.1)/0.6,0,1)); SLIME.u.uSlime.value=SLIME.level*(1-f); if(f>=0.99) SLIME.on=false; }   // the last of the biofilm fades: a clean hull
+  let pos, tg;
+  if(sh.follow!=null){ const j=DEMO.focus[sh.follow%Math.max(1,DEMO.focus.length)], b=SIM.bots[j];
+    if(b&&b.robot.visible){ const q=b.robot.quaternion, p=b.robot.getWorldPosition(new V3()), n=new V3(0,1,0).applyQuaternion(q), fw=new V3(1,0,0).applyQuaternion(q);
+      const off=n.clone().multiplyScalar(1.9).addScaledVector(fw,-1.5).applyAxisAngle(n,(sh.orbit||0)*(u-0.5)*1.6);
+      pos=p.clone().add(off); tg=p.clone().addScaledVector(fw,0.35); } }
+  if(!pos&&sh.prop){ const b=SIM.bots[DEMO.focus[3%Math.max(1,DEMO.focus.length)]];
+    if(b&&b.robot.visible){ const rp=b.robot.getWorldPosition(new V3()), [b0,b1,up]=sh.prop, a=b0+(b1-b0)*easeIO(u);
+      // close off the blade face it's working, from just behind it, swinging slowly round to the aft quarter: the robot and its
+      // drums fill the frame with the blade and hub around it
+      const q=b.robot.quaternion, n=new V3(0,1,0).applyQuaternion(q), fw=new V3(1,0,0).applyQuaternion(q), d=new V3(-Math.cos(a),-up,DEMO.ps*Math.sin(a)).normalize();
+      const dir=n.clone().multiplyScalar(0.85).addScaledVector(d,0.35).addScaledVector(fw,-0.35).normalize();
+      tg=rp.clone().addScaledVector(fw,0.2).lerp(DEMO.pc,0.08); pos=rp.clone().addScaledVector(dir,HULL.cat?1.4:2.6); } }
+  if(!pos&&sh.reveal){ const b=SIM.bots[DEMO.focus[0]];
+    if(b&&b.robot.visible){ const q=b.robot.quaternion, rp=b.robot.getWorldPosition(new V3()), n=new V3(0,1,0).applyQuaternion(q), fw=new V3(1,0,0).applyQuaternion(q);
+      const close=rp.clone().addScaledVector(n,1.6).addScaledVector(fw,-1.3), e=easeIO(clamp((u-0.18)/0.82,0,1));     // hold close, then pull back and sweep out
+      pos=close.lerp(sh.widePos,e).addScaledVector(n,Math.sin(Math.PI*e)*sh.widePos.length()*0.12); tg=rp.clone().lerp(sh.wideTg,e); } }
+  if(!pos&&sh.rudder&&DEMO.rudderT!=null){ const b=SIM.bots[DEMO.focus[1]];
+    if(b&&b.robot.visible){ const q=b.robot.quaternion, rp=b.robot.getWorldPosition(new V3()), n=new V3(0,1,0).applyQuaternion(q), fw=new V3(1,0,0).applyQuaternion(q);
+      pos=rp.clone().addScaledVector(n,2.2).addScaledVector(fw,-1.1+0.6*u).add(new V3(0,-0.35,0)); tg=rp.clone().addScaledVector(fw,0.35); } }
+  if(!pos&&sh.corner&&DEMO.corner){ const C=DEMO.corner, b=SIM.bots[DEMO.focus[0]];
+    if(b&&b.robot.visible){ const rp=b.robot.getWorldPosition(new V3()); pos=C.pos.clone().addScaledVector(C.dl,1.2*easeIO(u)); tg=C.tg.clone().lerp(rp,0.7); } }
+  if(!pos&&sh.between){ const A=SIM.bots[DEMO.focus[sh.between[0]%DEMO.focus.length]], B=SIM.bots[DEMO.focus[sh.between[1]%DEMO.focus.length]];
+    if(A&&B&&A.robot.visible&&B.robot.visible){ const pa=A.robot.getWorldPosition(new V3()), pb=B.robot.getWorldPosition(new V3()), e=easeIO(u), p=pa.clone().lerp(pb,e);
+      const n=new V3(0,1,0).applyQuaternion(A.robot.quaternion).lerp(new V3(0,1,0).applyQuaternion(B.robot.quaternion),e).normalize(), d=pb.clone().sub(pa).normalize();
+      const span=pa.distanceTo(pb), off=clamp(span*0.35,6,18);
+      pos=p.clone().addScaledVector(n,off).add(new V3(0,-0.25*off,0)).addScaledVector(d,-0.3*off); tg=p.clone().lerp(pb,Math.min(1,e+0.35)); } }
+  if(!pos){ const c=sh.cam?sh.cam(u):{pos:DEMO.widePos.clone(),tg:DEMO.wideTg.clone()}; pos=c.pos; tg=c.tg; }
+  if(DEMO.cut){ camera.position.copy(pos); controls.target.copy(tg); DEMO.cut=false; }
+  else { const f=(sh.follow!=null||sh.between||sh.prop||sh.corner||sh.rudder)?0.15:(sh.reveal?0.35:1); camera.position.lerp(pos,f); controls.target.lerp(tg,f); } }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&DEMO.on) stopDemo(); });
+$('demoStop').addEventListener('click',()=>stopDemo());
+$('vDemo').addEventListener('click',()=>{ $('vesselDlg').close(); startDemo(); });
+renderer.domElement.addEventListener('pointerdown',()=>{ if(DEMO.on) stopDemo(); });
 const dr=$('draught');
 function setDraught(v){ const st=HULL.cat?100:10; draught=Math.round(clamp(v,+dr.min,+dr.max)*st)/st; dr.value=draught; $('draughtVal').textContent=draught.toFixed(HULL.cat?2:1)+' m'; updateWSA(); setWaterline(draught/VS.sy); updateStates(); updateCardDepth(); if(VESSEL.side) buildBerth(); if(SIM.runs.length) rebuildSimKeep(); if(typeof SEABED!=='undefined') updateSeabed(); }
 dr.addEventListener('input',()=>setDraught(parseFloat(dr.value)));
@@ -2650,6 +3067,8 @@ window.addEventListener('resize',resize);
 function markerScale(px){ return 2*(px/virtH)*Math.tan(THREE.MathUtils.degToRad(camera.fov)/2); }
 function loop(now){
   requestAnimationFrame(loop);
+  SLIME.u.uWL.value=draught; SLIME.u.uSlime.value=SLIME.on?SLIME.level:0;
+  if(DEMO.on){ anim=null; demoFrame(now); }
   if(anim){
     const k=clamp((now-anim.start)/anim.dur,0,1), e=k<0.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
     camera.position.lerpVectors(anim.p0,anim.p1,e); controls.target.lerpVectors(anim.t0,anim.t1,e);
@@ -2669,6 +3088,18 @@ function loop(now){
     if(SIM.playing){ SIM.T=Math.min(SIM.tl.total,SIM.T+dt*SIM.mult/3600); if(SIM.T>=SIM.tl.total) SIM.playing=false; applyTimeline(false);
       if(!SIM.playing||now-SIM.ui>200){ SIM.ui=now; updateSimUI(); } }
     for(const b of SIM.bots) if(b.robot.visible) easeTether(b);
+    // hide every line on the hull while the simulation plays: planned tracks, cleaned lanes, routes, start markers, waterline
+    if(!DEMO.on){ const hide=$('simHideTr').checked&&SIM.playing;
+      if(hide!==SIM.trHidden){ SIM.trHidden=hide; SIM.noRoute=hide;
+        for(const r of SIM.runs){ for(const o of [r.full,...(r.doneLines||[r.done])]) o.visible=!hide; for(const m of r.refMarks||[]) m.visible=!hide; }
+        if(hide){ SIM.wlWas=[wlLine.visible,catWL.map(l=>l.visible)]; wlLine.visible=false; catWL.forEach(l=>l.visible=false); }
+        else if(SIM.wlWas){ wlLine.visible=SIM.wlWas[0]&&!HULL.cat; catWL.forEach((l,i)=>l.visible=SIM.wlWas[1][i]!==false); SIM.wlWas=null; } } }
+    { const dtw=Math.min(0.05,Math.max(0,(now-(SIM.spinT||now))/1000)), w=200*2*Math.PI/60; SIM.spinT=now;       // brush drums at 200 rpm, real time
+      for(const b of SIM.bots){ const ud=b.robot.userData, st=b.state, wet=b.robot.visible&&b.robot.position.y<draught-0.02;
+        if(st&&/^Cleaning/.test(st.status)) for(const d of ud.drums) d.rotation.z+=d.userData.dir*w*dtw;
+        if(DEMO.on&&!wet){ b.robot.visible=false; b.tether.visible=false; b.route.visible=false; }
+        if(ud.glows){ const sc=Math.max(0.32,camera.position.distanceTo(b.robot.position)*(NIGHT?0.018:0.006)); for(const gl of ud.glows){ gl.visible=wet; gl.scale.setScalar(sc); } }
+        if(ud.spots) for(const L of ud.spots) L.intensity=wet?(NIGHT?2.0:1.0):0; } }
     if(SIM.follow&&SIM.bots.length){ const b=SIM.bots.find(q=>q.state&&q.state.busy)||SIM.bots[0]; const dv=b.robot.position.clone().sub(controls.target).multiplyScalar(0.12); controls.target.add(dv); camera.position.add(dv); } }
   renderer.render(scene,camera);
 }
@@ -2829,7 +3260,7 @@ function catPaint(zoneMode){ const G=HULL.G, T=draught;
     col.needsUpdate=true; } }
 function catBuild(){ const G=HULL.G; if(catGroup){ scene.remove(catGroup); catGroup.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); }
   catGroup=new THREE.Group(); catGroup.userData.world=true; scene.add(catGroup); catHulls=[]; catWL=[];
-  const hullMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.65,metalness:0.05,side:THREE.DoubleSide});
+  const hullMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.65,metalness:0.05,side:THREE.DoubleSide}); slimeify(hullMat);
   const NX=120, NS=96;
   for(const s of [1,-1]){ const pos=[], meta=[], idx=[];
     for(let i=0;i<=NX;i++){ const x=G.L*i/NX; for(let j=0;j<=NS;j++){ const q=catSecPt(G,s,x,j/NS); pos.push(...CW(...q.p).toArray()); meta.push({h:q.p[1],face:q.face,x:q.p[0],q:q.q}); } }
@@ -2947,7 +3378,7 @@ function setZoneList(){ const box=$('simZones'); if(!TANKER_ZONE_HTML) TANKER_ZO
   box.querySelectorAll('input').forEach(c=>c.checked=false);
   box.querySelectorAll('i[data-z]').forEach(i=>{ i.style.background=zoneColor(i.dataset.z); }); }
 // views sized to the catamaran: [direction, target, half width and half height to fit]
-const CAT_VIEWS={quarter:[[0.45,-0.32,0.83],[0,1.6,0],[16,6]],port:[[0,0.05,-1],[0,2.2,0],[15,5]],stbd:[[0,0.05,1],[0,2.2,0],[15,5]],bottom:[[0,-1,0.03],[0,0.4,0],[15,5.5]],
+const CAT_VIEWS={quarter:[[0.45,-0.32,0.83],[0,1.6,0],[16,6]],bowq:[[0.62,-0.42,0.66],[5,1.0,0],[11,5]],port:[[0,0.05,-1],[0,2.2,0],[15,5]],stbd:[[0,0.05,1],[0,2.2,0],[15,5]],bottom:[[0,-1,0.03],[0,0.4,0],[15,5.5]],
   bow:[[0.75,-0.08,0.66],[9,1.2,0],[7,4]],stern:[[-0.75,0.0,0.66],[-11,0.8,0],[6.5,3.8]],deck:[[0,1,0.002],[0,2.8,0],[15,5]]};
 function catView(name,instant){ const v=CAT_VIEWS[name]||CAT_VIEWS.quarter, k=HULL.G.L/26.5, dir=new V3(...v[0]).normalize(), tg=new V3(...v[1]).multiplyScalar(k), pos=tg.clone().addScaledVector(dir,fitDist(v[2][0]*k,v[2][1]*k));
   if(instant){ camera.position.copy(pos); controls.target.copy(tg); controls.update(); } else flyTo(pos,tg); setViewPressed(name); }
@@ -2997,8 +3428,15 @@ function applyVessel(v){
 function vTypeShow(){ const cat=$('vType').value==='cat'; $('vMono').hidden=cat; $('vCatF').hidden=!cat; $('vImoRow').hidden=cat; $('vMsg').textContent=''; }
 function fillCat(P){ $('cLoa').value=P.loa; $('cLwl').value=P.lwl; $('cBeam').value=P.beam; $('cHullB').value=P.hullB; $('cSpace').value=P.spacing; $('cDepth').value=P.depth; $('cDraft').value=P.draught; }
 $('vType').addEventListener('change',vTypeShow);
+$('vLight').addEventListener('change',e=>setNight(e.target.value==='night'));
+$('vSb').addEventListener('change',e=>{ $('sbOn').checked=e.target.checked; updateSeabed(); });
+$('vSbD').addEventListener('input',e=>{ $('sbDepth').value=e.target.value; updateSeabed(); });
+$('vSbT').addEventListener('change',e=>{ $('sbType').value=e.target.value; updateSeabed(); });
+function setSlime(){ SLIME.on=$('vSlime').checked; SLIME.level=+$('vSlimeL').value; for(const r of SIM.runs) for(const m of r.ribbons||[]) m.visible=SLIME.on; if(SIM.tl) applyTimeline(true); }
+$('vSlime').addEventListener('change',setSlime); $('vSlimeL').addEventListener('change',setSlime);
 $('vCat078').addEventListener('click',()=>{ fillCat(CAT078); $('vName').value='OCEAN TRACKER'; });
 function openVessel(){ const v=VESSEL; $('vType').value=HULL.cat?'cat':'mono'; fillCat(HULL.P||CAT078); vTypeShow();
+  $('vLight').value=NIGHT?'night':'day'; $('vSb').checked=$('sbOn').checked; $('vSbD').value=$('sbDepth').value; $('vSbT').value=$('sbType').value;
   $('vImo').value=v.imo||''; $('vName').value=v.name||''; $('vLoa').value=v.loa.toFixed(1); $('vBeam').value=v.beam.toFixed(1); $('vDraft').value=v.draught.toFixed(1);
   $('vBerth').value=v.berth||''; $('vSide').value=String(v.side||0); $('vMsg').textContent=''; $('vMsg').className='vmsg'; $('vesselDlg').showModal(); }
 async function lookupIMO(){
@@ -3045,7 +3483,7 @@ $('simLane').addEventListener('change',e=>{ if(SIM.runs.length) SIM.prev=simStat
 $('simFollow').addEventListener('change',e=>{ SIM.follow=e.target.checked; });
 ['pPhoto','pAreas','pNiche','pPerDp','pChargers','pRobots','pWins','pWin','pSetup','pPack','pRelaunch','pBatt','pSwap','pCharge','pCont'].forEach(id=>$(id).addEventListener('input',()=>updatePlan()));
 ['pStar','pChg','pDpSwap'].forEach(id=>$(id).addEventListener('change',()=>updatePlan()));
-$('sbOn').addEventListener('change',updateSeabed); $('sbDepth').addEventListener('input',updateSeabed);
+$('sbOn').addEventListener('change',updateSeabed); $('sbDepth').addEventListener('input',updateSeabed); $('sbType').addEventListener('change',updateSeabed);
 $('pRate').addEventListener('input',()=>updatePlan());
 updateSimUI();
 
