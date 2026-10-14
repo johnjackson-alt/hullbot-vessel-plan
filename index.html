@@ -103,7 +103,9 @@ button{font:inherit;color:inherit;}
 .venv-demo{display:flex;gap:12px;align-items:center;margin-top:8px;} .venv-demo button{flex:none;}
 .views button[data-act="night"][aria-pressed="true"]{background:#0e1b2c;color:#fff;}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none;}
-.views{position:absolute;top:14px;right:14px;display:flex;gap:4px;padding:4px;background:var(--surface);border-radius:8px;box-shadow:var(--shadow);z-index:3;}
+.views{position:absolute;top:14px;right:14px;display:flex;gap:4px;padding:3px;background:var(--surface);border-radius:8px;box-shadow:var(--shadow);z-index:3;}
+.view-pick{display:flex;align-items:center;gap:6px;padding:0 4px 0 8px;font-size:12px;font-weight:600;color:var(--ink-soft);}
+.view-pick select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--rule);border-radius:5px;padding:4px 6px;cursor:pointer;}
 .views button{border:0;background:none;padding:6px 11px;border-radius:5px;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;}
 .views button:hover{background:var(--surface-2);}
 .views button[aria-pressed="true"]{background:var(--signal);color:var(--signal-ink);}
@@ -534,15 +536,19 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
   <main class="stage" id="stage">
     <div class="stage-title"><h1>Hullbot Vessel Plan</h1><p>LUDRICK, MR product tanker, 183 m by 32.2 m</p></div>
     <nav class="views" id="views" aria-label="Camera views">
-      <button data-view="quarter" aria-pressed="true">3/4 below</button>
-      <button data-view="bowq" aria-pressed="false">Bow 3/4</button>
-      <button data-view="port" aria-pressed="false">Port</button>
-      <button data-view="stbd" aria-pressed="false">Starboard</button>
-      <button data-view="bottom" aria-pressed="false">Bottom</button>
-      <button data-view="bow" aria-pressed="false">Bow</button>
-      <button data-view="stern" aria-pressed="false">Stern</button>
-      <button data-view="deck" aria-pressed="false">Deck plan</button>
-      <button data-act="vessel" aria-pressed="false">Vessel</button>
+      <label class="view-pick"><span>View</span>
+        <select id="viewSel" aria-label="Camera view">
+          <option value="" hidden></option>
+          <option value="quarter" selected>3/4 below</option>
+          <option value="bowq">Bow 3/4</option>
+          <option value="port">Port</option>
+          <option value="stbd">Starboard</option>
+          <option value="bottom">Bottom</option>
+          <option value="bow">Bow</option>
+          <option value="stern">Stern</option>
+          <option value="deck">Deck plan</option>
+        </select>
+      </label>
     </nav>
     <div class="demo-cap" id="demoCap" aria-live="polite"></div>
     <button type="button" class="demo-stop" id="demoStop" hidden>Stop demo</button>
@@ -605,7 +611,7 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
         <p class="vnote small">These apply straight away. Seafloor and depth are the same settings as in step 1, Vessel and draught.</p>
         <div class="venv-demo"><button type="button" id="vDemo">Run demo</button><span class="vnote small">A cinematic run-through of four robots cleaning this vessel, from all four deployment points, by day and by night. Press Esc or click the view to stop.</span></div>
       </fieldset>
-      <div class="vbtns"><button type="button" id="vReset">Standard model</button><span></span><button type="button" id="vCancel">Cancel</button><button type="submit" class="primary">Apply</button></div>
+      <div class="vbtns"><button type="button" id="vReset">Standard model</button><span></span><button type="button" id="vCancel">Cancel</button><button type="button" class="primary" id="vApply">Apply</button></div>
     </form>
   </dialog>
 </div>
@@ -807,12 +813,17 @@ const SLIME={on:false,level:0.75,u:{uSlime:{value:0},uWL:{value:0}}};
 const SLIME_GLSL='float slimeH(vec3 p){ return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453); }\n'+
   'float slimeN(vec3 p){ vec3 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(mix(slimeH(i),slimeH(i+vec3(1,0,0)),f.x),mix(slimeH(i+vec3(0,1,0)),slimeH(i+vec3(1,1,0)),f.x),f.y),'+
   'mix(mix(slimeH(i+vec3(0,0,1)),slimeH(i+vec3(1,0,1)),f.x),mix(slimeH(i+vec3(0,1,1)),slimeH(i+vec3(1,1,1)),f.x),f.y),f.z); }\n';
-function slimeify(mat){ mat.onBeforeCompile=sh=>{ sh.uniforms.uSlime=SLIME.u.uSlime; sh.uniforms.uWL=SLIME.u.uWL;
-    sh.vertexShader='varying vec3 vSlimeW;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n  vSlimeW=(modelMatrix*vec4(transformed,1.0)).xyz;');
-    sh.fragmentShader='uniform float uSlime; uniform float uWL; varying vec3 vSlimeW;\n'+SLIME_GLSL+sh.fragmentShader.replace('#include <map_fragment>',
-      '#include <map_fragment>\n  if(uSlime>0.0){ float dd=uWL-vSlimeW.y; if(dd>0.0){ float n=slimeN(vSlimeW*0.6)*0.5+slimeN(vSlimeW*2.6)*0.3+slimeN(vSlimeW*9.0)*0.2;\n'+
-      '    float a=uSlime*smoothstep(0.0,0.6,dd)*clamp(0.45+0.75*n,0.0,1.0); vec3 sl=mix(vec3(0.31,0.34,0.18),vec3(0.15,0.2,0.1),n); diffuseColor.rgb=mix(diffuseColor.rgb,sl,a); } }'); };
-  mat.needsUpdate=true; }
+function slimeify(mat,paint){ mat.onBeforeCompile=sh=>{ sh.uniforms.uSlime=SLIME.u.uSlime; sh.uniforms.uWL=SLIME.u.uWL; if(paint) Object.assign(sh.uniforms,paint.u);
+    const mk=!!(paint&&paint.mask); if(mk) sh.uniforms.uCleanMap={value:CLEANMAP.tex};
+    sh.vertexShader=(mk?'attribute vec2 catUv; varying vec2 vCatUv;\n':'')+'varying vec3 vSlimeW;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n  vSlimeW=(modelMatrix*vec4(transformed,1.0)).xyz;'+(mk?' vCatUv=catUv;':''));
+    sh.fragmentShader='uniform float uSlime; uniform float uWL; varying vec3 vSlimeW;\n'+(mk?'uniform sampler2D uCleanMap; varying vec2 vCatUv;\n':'')+(paint?paint.decl:'')+SLIME_GLSL+sh.fragmentShader.replace('#include <color_fragment>',
+      '#include <color_fragment>\n'+(paint?paint.glsl:'')+'  if(uSlime>0.0){ float dd=uWL-vSlimeW.y; if(dd>0.0){ float n=slimeN(vSlimeW*0.6)*0.5+slimeN(vSlimeW*2.6)*0.3+slimeN(vSlimeW*9.0)*0.2;\n'+
+      '    float a=uSlime*smoothstep(0.0,0.6,dd)*clamp(0.45+0.75*n,0.0,1.0)'+(mk?'*(1.0-texture2D(uCleanMap,vCatUv).r)':'')+'; vec3 sl=mix(vec3(0.31,0.34,0.18),vec3(0.15,0.2,0.1),n); diffuseColor.rgb=mix(diffuseColor.rgb,sl,a); } }'); };
+  mat.customProgramCacheKey=()=>paint?(paint.mask?'slime-catpaint-mask':'slime-catpaint'):'slime'; mat.needsUpdate=true; }
+// the catamaran's 'cleaned' map: the cleaned tracks painted in the hull mesh's own surface coordinates (u along the hull, v round
+// the section: starboard hull in the lower half, port in the upper), read by the biofilm layer so clean areas are part of the surface
+const CLEANMAP=(()=>{ const cv=document.createElement('canvas'); cv.width=1024; cv.height=512; const ctx=cv.getContext('2d'); ctx.fillStyle='#000'; ctx.fillRect(0,0,1024,512);
+  const tex=new THREE.CanvasTexture(cv); tex.flipY=false; tex.minFilter=THREE.LinearFilter; tex.generateMipmaps=false; return {cv,ctx,tex,key:''}; })();
 const hullMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.78,metalness:0.0,side:THREE.DoubleSide,map:PAINT_TEX.hullMap,bumpMap:PAINT_TEX.hullBump,bumpScale:0.035});
 slimeify(hullMat);
 const deckMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.86,metalness:0.0,side:THREE.DoubleSide,map:PAINT_TEX.deckMap,bumpMap:PAINT_TEX.deckBump,bumpScale:0.03});
@@ -1690,21 +1701,22 @@ const ROBOT=(function(){
     const sh=new THREE.Shape(), v0=s*0.058, v1=s*0.17;                                                                 // side plates round the ducts
     sh.moveTo(-0.15,Math.min(v0,v1)); sh.lineTo(0.15,Math.min(v0,v1)); sh.lineTo(0.15,Math.max(v0,v1)); sh.lineTo(-0.15,Math.max(v0,v1)); sh.closePath();
     for(const [x,z] of ducts.filter(d=>Math.sign(d[1])===s)){ const h=new THREE.Path(); h.absarc(x,z,RD,0,Math.PI*2,true); sh.holes.push(h); }
-    const dk=new THREE.ExtrudeGeometry(sh,{depth:0.012,bevelEnabled:false,curveSegments:24}); dk.rotateX(Math.PI/2); dk.translate(0,0.122,0); add('plate',dk,0,0,0,1,1,1);
+    const dk=new THREE.ExtrudeGeometry(sh,{depth:0.012,bevelEnabled:false,curveSegments:24}); dk.rotateX(Math.PI/2); dk.translate(0,0.122,0); add('dark',dk,0,0,0,1,1,1);
     for(const [x,z] of ducts.filter(d=>Math.sign(d[1])===s)) add('black',tor,x,0.123,z,1,1,1,Math.PI/2,0,0);
     pill('tan',0,0.1235,s*0.12,0.032,0.014); box('grey',-0.0015,0.0015,0.1225,0.1255,Math.min(s*0.058,s*0.105),Math.max(s*0.058,s*0.105));   // tan oval and its rod
     // pontoon rail: straight along the side to a lamp at the front corner, curving in at the rear
-    const path=new THREE.CatmullRomCurve3([new V3(-0.192,0.121,s*0.13),new V3(-0.177,0.127,s*0.153),new V3(-0.145,0.13,s*0.165),new V3(0,0.13,s*0.168),new V3(0.145,0.13,s*0.167),new V3(0.19,0.129,s*0.163)]);
-    add('body',new THREE.TubeGeometry(path,56,0.017,16,false),0,0,0,1,1,1); add('body',PG.sph,-0.192,0.121,s*0.13,0.034,0.034,0.034);
-    for(const x of [-0.105,0.105]) pill('black',x,0.1475,s*0.168,0.024,0.009);                                      // slots on the rail
-    box('black',0.192,0.205,0.112,0.146,Math.min(s*0.142,s*0.182),Math.max(s*0.142,s*0.182));                                                              // lamp bezel at the end of the rail
-    box('clear',0.205,0.222,0.114,0.144,Math.min(s*0.144,s*0.18),Math.max(s*0.144,s*0.18));                             // clear lamp block
-    for(const zz of [0.151,0.172]) add('led',PG.c20,0.2205,0.129,s*zz,0.017,0.003,0.017,0,0,Math.PI/2);                 // its two LEDs
+    const path=new THREE.CatmullRomCurve3([new V3(-0.172,0.15,s*0.142),new V3(-0.15,0.176,s*0.162),new V3(-0.1,0.182,s*0.168),new V3(0,0.183,s*0.17),
+      new V3(0.1,0.182,s*0.168),new V3(0.15,0.176,s*0.162),new V3(0.172,0.152,s*0.145)]);                                // along the side, curving down into the housings
+    add('body',new THREE.TubeGeometry(path,64,0.016,16,false),0,0,0,1,1,1); add('body',PG.sph,-0.172,0.15,s*0.142,0.032,0.032,0.032);
+    for(const x of [-0.07,0.07]) pill('black',x,0.1995,s*0.17,0.024,0.009);                                         // slots on the rail
+    box('black',0.172,0.186,0.138,0.172,Math.min(s*0.126,s*0.166),Math.max(s*0.126,s*0.166));                                                              // lamp bezel at the end of the rail
+    box('clear',0.186,0.204,0.14,0.17,Math.min(s*0.128,s*0.164),Math.max(s*0.128,s*0.164));                             // clear lamp block
+    for(const zz of [0.135,0.156]) add('led',PG.c20,0.2025,0.155,s*zz,0.017,0.003,0.017,0,0,Math.PI/2);                 // its two LEDs
     add('lampS',PG.box,0,0.13,s*0.1855,0.05,0.012,0.003);                                                              // pontoon light, outside the rail
     // TC1 to TC4: horizontal cylinder housings angled at 45° towards each corner, rounded at the outer end, motor inboard
     // TC1 to TC4: corner thrusters in white cylindrical shells angled at 45° to each corner, open at the outer end with a black
     // duct and the thruster inside, a rim round the mouth, a rounded closed back, and a teardrop fairing on top carrying the TOF sensor
-    for(const sx of [1,-1]){ const d=new V3(sx,-0.3,s).normalize(), c=new V3(sx*0.146,0.098,s*0.1), len=0.082, rad=0.043, a0=c.clone().addScaledVector(d,-len/2), mouth=c.clone().addScaledVector(d,len/2);
+    for(const sx of [1,-1]){ const d=new V3(sx,-0.08,s*0.45).normalize(), c=new V3(sx*0.158,0.122,s*0.122), len=0.08, rad=0.044, a0=c.clone().addScaledVector(d,-len/2), mouth=c.clone().addScaledVector(d,len/2);
       along('body',SHELL,a0,d,len,rad*2); along('blackIn',SHELL,a0,d,len*0.99,rad*1.78);                               // shell, black inside
       add('body',PG.sph,a0.x,a0.y,a0.z,rad*2,rad*2,rad*2);                                                              // rounded closed back
       along('black',PG.c20,a0.clone().addScaledVector(d,len*0.28),d,0.003,rad*1.78);                                     // floor of the duct
@@ -1717,17 +1729,21 @@ const ROBOT=(function(){
       add('black',PG.sph,ft.x+d.x*0.03,ft.y+0.002,ft.z+d.z*0.03,0.011,0.011,0.011); } }                                   // TOF sensor
   // forward stereo camera: white elongated-hexagon frame with a dark recessed face and two lenses with metal rims and tinted glass
   { const hex=(w,h,f)=>{ const sh=new THREE.Shape(); sh.moveTo(-w,0); sh.lineTo(-w*f,h); sh.lineTo(w*f,h); sh.lineTo(w,0); sh.lineTo(w*f,-h); sh.lineTo(-w*f,-h); sh.closePath(); return sh; };
-    const fr=new THREE.ExtrudeGeometry(hex(0.052,0.028,0.62),{depth:0.042,bevelEnabled:true,bevelThickness:0.003,bevelSize:0.003,bevelSegments:2}); fr.rotateY(Math.PI/2); fr.translate(0.186,0.142,0); add('body',fr,0,0,0,1,1,1);
+    // the camera housing is the spine's nose: the top casing runs on and curves smoothly down to the camera face (as on the robot)
+    const ns=new THREE.Shape(); ns.moveTo(0.13,0.105); ns.lineTo(0.208,0.105); ns.quadraticCurveTo(0.222,0.106,0.222,0.12); ns.lineTo(0.222,0.164);
+    ns.quadraticCurveTo(0.221,0.186,0.198,0.194); ns.quadraticCurveTo(0.17,0.2025,0.13,0.2025); ns.closePath();
+    const nose=new THREE.ExtrudeGeometry(ns,{depth:0.098,bevelEnabled:true,bevelThickness:0.006,bevelSize:0.006,bevelSegments:4,curveSegments:16}); nose.translate(0,0,-0.049); add('body',nose,0,0,0,1,1,1);
     const fc=new THREE.ExtrudeGeometry(hex(0.043,0.021,0.62),{depth:0.004,bevelEnabled:false}); fc.rotateY(Math.PI/2); fc.translate(0.2275,0.142,0); add('face',fc,0,0,0,1,1,1); }
-  for(const z of [-0.019,0.019]){ const t=new THREE.TorusGeometry(0.0105,0.0026,10,24); add('rim',t,0.2315,0.142,z,1,1,1,0,Math.PI/2,0);
-    add('glass',PG.sph,0.2312,0.142,z,0.012,0.019,0.019); add('black',PG.c12,0.2323,0.142,z,0.006,0.002,0.006,0,0,Math.PI/2); }
+  for(const z of [-0.019,0.019]){ const t=new THREE.TorusGeometry(0.0105,0.0026,10,24); add('rim',t,0.2325,0.142,z,1,1,1,0,Math.PI/2,0);
+    add('glass',PG.sph,0.2322,0.142,z,0.012,0.019,0.019); add('black',PG.c12,0.2333,0.142,z,0.006,0.002,0.006,0,0,Math.PI/2); }
   add('black',PG.c12,-0.205,0.155,0,0.03,0.03,0.03,0,0,Math.PI/2);                                                    // tether connector
   const geo={}, pivot={'F:':new V3(0.188,0.056,0),'R:':new V3(-0.188,0.056,0)};
   for(const k in parts){ geo[k]=mergeGeoms(parts[k]); const pr=k.slice(0,2); if(pivot[pr]) geo[k].translate(-pivot[pr].x,-pivot[pr].y,0); }
   const cv=document.createElement('canvas'); cv.width=cv.height=128; const c=cv.getContext('2d'), gr=c.createRadialGradient(64,64,0,64,64,64);
   gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(0.18,'rgba(255,246,222,0.9)'); gr.addColorStop(0.45,'rgba(255,236,190,0.25)'); gr.addColorStop(1,'rgba(255,230,180,0)'); c.fillStyle=gr; c.fillRect(0,0,128,128);
   const glow=new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),color:0xfff3dc,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
-  return {geo,M,pivot,glow};
+  const halo=new THREE.SpriteMaterial({map:glow.map,color:0xe9ffe0,transparent:true,opacity:0.22,depthWrite:false,blending:THREE.AdditiveBlending});   // light scattering in the water round each lamp
+  return {geo,M,pivot,glow,halo};
 })();
 // a robot; 'lit' robots (in the simulator) carry their front LED glow and a spotlight that lights the hull ahead
 function makeRobot(lit){ const g=new THREE.Group(), drums={};
@@ -1735,9 +1751,11 @@ function makeRobot(lit){ const g=new THREE.Group(), drums={};
     if(ROBOT.pivot[pr]){ if(!drums[pr]){ drums[pr]=new THREE.Group(); drums[pr].position.copy(ROBOT.pivot[pr]); drums[pr].userData.dir=pr==='F:'?-1:1; g.add(drums[pr]); } drums[pr].add(m); }
     else g.add(m); }
   g.userData.drums=Object.values(drums);
-  if(lit){ const glows=[]; for(const s of [1,-1]){ const sp=new THREE.Sprite(ROBOT.glow); sp.position.set(0.222,0.129,s*0.162); sp.scale.setScalar(0.32); sp.renderOrder=12; g.add(sp); glows.push(sp); }
-    const spots=[]; for(const s of [1,-1]){ const L=new THREE.SpotLight(0xfff1d6,0,6,0.62,0.65,1.6); L.position.set(0.222,0.129,s*0.162);   // one from each front corner lamp
-      L.target.position.set(0.95,-0.04,s*0.22); g.add(L); g.add(L.target); spots.push(L); }                    // aimed down at the hull ahead, where the cameras look
+  if(lit){ const glows=[], halos=[]; for(const s of [1,-1]){ const sp=new THREE.Sprite(ROBOT.glow); sp.position.set(0.21,0.155,s*0.146); sp.scale.setScalar(0.36); sp.renderOrder=12; g.add(sp); glows.push(sp);
+      const hl=new THREE.Sprite(ROBOT.halo); hl.position.set(0.24,0.16,s*0.15); hl.scale.setScalar(1.1); hl.renderOrder=11; g.add(hl); halos.push(hl); }
+    g.userData.halos=halos;
+    const spots=[]; for(const s of [1,-1]){ const L=new THREE.SpotLight(0xf6ffe6,0,9,0.95,0.92,1.5); L.position.set(0.21,0.155,s*0.146);   // wide, soft beams that merge into one pool of light   // one from each front corner lamp
+      L.target.position.set(1.5,-0.04,s*0.4); g.add(L); g.add(L.target); spots.push(L); }                    // aimed down at the hull ahead, where the cameras look
     g.userData.glows=glows; g.userData.spots=spots; }
   return g; }
 const worldGroup=new THREE.Group(); worldGroup.userData.world=true; scene.add(worldGroup);
@@ -2098,14 +2116,21 @@ function bandEdge(r,p,n,sd,half,e){
     const v=p.clone().add(new V3(0,(e?half:-half)*VS.sy,0)).addScaledVector(n,-0.01);                       // the band's width is vertical
     v.y=clamp(v.y/VS.sy,R_BOT+0.03,R_TOP-0.03)*VS.sy; return v; }
   return p.clone().addScaledVector(sd,e?half:-half).addScaledVector(n,-0.01); }
+// on the catamaran the band's edges are measured round the hull's surface from the lane (girth position +/- half the width),
+// so the band wraps the hull across the chine and round the bow rather than cutting into it
+function catBandEdges(r,pr,x,half){ const G=HULL.G; if(!pr) return null; const u=catUAt(G,pr.x,pr.face,pr.q), t=catGirth(G,x); if(u==null||!(t>0)) return null;
+  const out=[]; for(const e of [-1,1]){ const g=catGirthPt(G,x,clamp(u+e*half/t,0,1)); if(!g) return null; out.push(catSurf(g.face,x,g.q,r.cfg.side,0.012)); } return out; }
 // a band of clean paint one lane wide along each zone's cleaned track (shown when the hull has biofilm)
-function buildRibbon(r){ if(r.kind==='niche'&&r.cfg.part!=='rudder') return;                  // the propeller is bronze, not painted hull
+function buildRibbon(r){ if((r.kind==='niche'&&r.cfg.part!=='rudder')||r.cfg.sub==='niche'||r.kind==='cat') return;   // (on the catamaran the cleaned map shows it)   // propellers, shafts, brackets and the catamaran's rudders aren't painted hull
   const P=r.pts, N=r.nrm, i0=Math.max(1,r.transitN), n=P.length-i0, half=BAND_HALF(), pos=new Float32Array(n*6), col=new Float32Array(n*6), uv=new Float32Array(n*4), nor=new Float32Array(n*6), idx=[];
   const cat=HULL.cat, cc=cat?CAT_PAINT.af:null, t=new V3(), b=new V3();
-  for(let k=0;k<n;k++){ const i=i0+k, p=P[i], nn=N[i], a=P[Math.max(i0,i-1)], c=P[Math.min(P.length-1,i+1)]; t.subVectors(c,a); b.crossVectors(nn,t).normalize();
-    for(let e=0;e<2;e++){ const q=bandEdge(r,p,nn,b,half,e), j=k*2+e; pos.set([q.x,q.y,q.z],j*3); nor.set([nn.x,nn.y,nn.z],j*3);
+  let prev=null;
+  for(let k=0;k<n;k++){ const i=i0+k, p=P[i], nn=N[i], a=P[Math.max(i0,i-1)], c=P[Math.min(P.length-1,i+1)]; t.subVectors(c,a); b.crossVectors(nn,t);
+    if(b.lengthSq()<1e-10&&prev) b.copy(prev); b.normalize(); if(prev&&b.dot(prev)<0) b.negate(); prev=(prev||new V3()).copy(b);   // keep the width the same way round: no twists at turns
+    const ce=cat&&r.par?catBandEdges(r,r.par[i],p.x+HULL.G.L/2,half):null;
+    for(let e=0;e<2;e++){ const q=ce?ce[e].p:bandEdge(r,p,nn,b,half,e), qn=ce?ce[e].n:nn, j=k*2+e; pos.set([q.x,q.y,q.z],j*3); nor.set([qn.x,qn.y,qn.z],j*3);
       const hs=q.y/VS.sy; col.set(bandColour(q),j*3); uv.set([(q.x/VS.sx+X0)/TILE.hx,hs/TILE.hh],j*2); }
-    if(k<n-1){ const a2=k*2; idx.push(a2,a2+1,a2+2,a2+1,a2+3,a2+2); } }
+    if(k<n-1){ const a2=k*2; if(P[i].distanceTo(P[i+1])>1.6) idx.push(a2,a2,a2,a2,a2,a2); else idx.push(a2,a2+1,a2+2,a2+1,a2+3,a2+2); } }   // never bridge a jump
   const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3)); g.setAttribute('color',new THREE.BufferAttribute(col,3)); g.setAttribute('uv',new THREE.BufferAttribute(uv,2));
   g.setAttribute('normal',new THREE.BufferAttribute(nor,3)); g.setIndex(idx); r.ribG=g; r.rib0=i0; r.ribbons=[]; }          // the hull's own normals
 // the clean band looks exactly like clean hull: the hull's own paint, texture and bump, with no slime
@@ -2121,7 +2146,26 @@ function syncRibbons(r,n){ if(!r.ribG) return; const vis=SLIME.on; const m0=HULL
   while(r.ribbons.length>n){ const m=r.ribbons.pop(); simGroup.remove(m); m.geometry.dispose(); }
   for(const m of r.ribbons) m.visible=vis; }
 // the last bit of a part's cleaned line and band, from the last whole track point to exactly where the robot is
-function setTail(r,i,a,b,n){ r.tails=r.tails||[]; let T=r.tails[i];
+// a track point's place in the hull mesh's surface coordinates, and how many map pixels a metre round the hull is there
+function catMapPt(r,pr){ const G=HULL.G, x=pr.x, C=G.hc(x), top=G.Dt(x); let sig, dsm;
+  if(pr.face==='out'){ sig=0.3*(top-pr.q)/Math.max(0.05,top-C); dsm=0.3/Math.max(0.05,top-C); }
+  else if(pr.face==='bot'){ sig=0.3+0.4*pr.q; dsm=0.4/Math.max(0.05,(Math.hypot(G.bc(x,1),C-G.hk(x))+Math.hypot(G.bc(x,-1),C-G.hk(x)))); }
+  else { sig=0.7+0.3*(pr.q-C)/Math.max(0.05,G.hw-C); dsm=0.3/Math.max(0.05,G.hw-C); }
+  return {u:clamp(x/G.L,0,1)*1024, v:((r.cfg.side>0?0:0.5)+0.5*clamp(sig,0,1))*512, pxm:0.5*512*dsm}; }
+function drawCleanMap(segs){ const M=CLEANMAP, ctx=M.ctx, on=SLIME.on;
+  const key=on?segs.map(g=>g.r.key+':'+g.i0+'-'+g.i1+':'+(g.dir>0?g.B.p.x:g.A.p.x).toFixed(2)).join('|'):'off';
+  if(key===M.key) return; M.key=key; ctx.fillStyle='#000'; ctx.fillRect(0,0,1024,512); if(!on){ M.tex.needsUpdate=true; return; }
+  ctx.strokeStyle='#fff'; ctx.lineCap='round'; ctx.lineJoin='round'; const W=2*BAND_HALF()*1.3;   // generous, so neighbouring lanes always overlap
+  for(const g of segs){ const r=g.r, P=[];
+    for(let k=g.i0;k<=g.i1;k++) if(r.par[k]) P.push(catMapPt(r,r.par[k]));
+    // the partial segment up to exactly where the robot is
+    const e=g.dir>0?g.B:g.A, j=g.dir>0?g.B.i:g.A.i, pa=r.par[j], pb=r.par[Math.min(r.par.length-1,j+1)];
+    if(pa&&pb){ const f=clamp((r.pts[j].distanceTo(e.p))/Math.max(1e-6,r.pts[j].distanceTo(r.pts[Math.min(r.pts.length-1,j+1)])),0,1), a=catMapPt(r,pa), b=catMapPt(r,pb), m={u:a.u+(b.u-a.u)*f,v:a.v+(b.v-a.v)*f,pxm:a.pxm};
+      if(g.dir>0) P.push(m); else P.unshift(m); }
+    for(let k=1;k<P.length;k++){ const a=P[k-1], b=P[k]; if(Math.abs(a.u-b.u)>60||Math.abs(a.v-b.v)>40) continue;          // never bridge a jump
+      ctx.lineWidth=Math.max(2,W*(a.pxm+b.pxm)/2); ctx.beginPath(); ctx.moveTo(a.u,a.v); ctx.lineTo(b.u,b.v); ctx.stroke(); } }
+  M.tex.needsUpdate=true; }
+function setTail(r,i,a,b,n,ip){ r.tails=r.tails||[]; let T=r.tails[i];
   if(!T){ const lg=new THREE.BufferGeometry(); lg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));
     const qg=new THREE.BufferGeometry(); for(const [k,w] of [['position',3],['color',3],['normal',3],['uv',2]]) qg.setAttribute(k,new THREE.BufferAttribute(new Float32Array(4*w),w)); qg.setIndex([0,1,2,1,3,2]);
     T=r.tails[i]={line:new THREE.Line(lg,r.done.material), quad:new THREE.Mesh(qg,RIB_MAT)}; T.line.renderOrder=8; T.quad.renderOrder=3; simGroup.add(T.line); simGroup.add(T.quad); }
@@ -2130,8 +2174,9 @@ function setTail(r,i,a,b,n){ r.tails=r.tails||[]; let T=r.tails[i];
   const lp=T.line.geometry.attributes.position; lp.setXYZ(0,a.x,a.y,a.z); lp.setXYZ(1,b.x,b.y,b.z); lp.needsUpdate=true; T.line.geometry.computeBoundingSphere();
   if(!T.quad.visible) return;
   const half=BAND_HALF(), t=b.clone().sub(a), sd=new V3().crossVectors(n,t).normalize(), qp=T.quad.geometry.attributes.position, qc=T.quad.geometry.attributes.color, qn=T.quad.geometry.attributes.normal, qu=T.quad.geometry.attributes.uv;
-  [a,b].forEach((p,k)=>{ for(let e=0;e<2;e++){ const v=bandEdge(r,p,n,sd,half,e), j=k*2+e, hs=v.y/VS.sy, c=bandColour(v);
-    qp.setXYZ(j,v.x,v.y,v.z); qc.setXYZ(j,c[0],c[1],c[2]); qn.setXYZ(j,n.x,n.y,n.z); qu.setXY(j,(v.x/VS.sx+X0)/TILE.hx,hs/TILE.hh); } });
+  [a,b].forEach((p,k)=>{ const ce=HULL.cat&&r.par&&ip!=null?catBandEdges(r,r.par[ip],p.x+HULL.G.L/2,half):null;
+    for(let e=0;e<2;e++){ const v=ce?ce[e].p:bandEdge(r,p,n,sd,half,e), vn=ce?ce[e].n:n, j=k*2+e, hs=v.y/VS.sy, c=bandColour(v);
+    qp.setXYZ(j,v.x,v.y,v.z); qc.setXYZ(j,c[0],c[1],c[2]); qn.setXYZ(j,vn.x,vn.y,vn.z); qu.setXY(j,(v.x/VS.sx+X0)/TILE.hx,hs/TILE.hh); } });
   qp.needsUpdate=qc.needsUpdate=qn.needsUpdate=qu.needsUpdate=true; T.quad.geometry.computeBoundingSphere(); }
 function syncDoneLines(r,n){ r.doneLines=r.doneLines||[r.done];
   while(r.doneLines.length<n){ const g=new THREE.BufferGeometry(); g.setAttribute('position',r.full.geometry.attributes.position); g.setDrawRange(0,0);
@@ -2293,6 +2338,7 @@ function botAt(j,T){ const segs=SIM.tl.bots[j]; if(!segs||!segs.length) return n
 function applyTimeline(snap){
   if(!SIM.tl){ SIM.bots.forEach(b=>{ b.robot.visible=b.tether.visible=b.route.visible=false; }); return; }
   const T=SIM.T;
+  const catSegs=[];
   for(const r of SIM.runs){ const pts=partsOf(r.key), s0=r.cum[Math.max(0,r.transitN-1)]; syncDoneLines(r,pts.length); let tot=0;
     if(r.ribG) syncRibbons(r,pts.length);
     pts.forEach((pt,i)=>{ const q=partProg(r.key,i,T), ln=r.doneLines[i]; tot+=q*(pt.b-pt.a);
@@ -2302,8 +2348,10 @@ function applyTimeline(snap){
       let i0, i1, ta, tb, tn; if(pt.dir>0){ i0=A.i; i1=B.i; ta=r.pts[B.i]; tb=B.p; tn=B.nr; } else { i0=A.i+1; i1=B.i+1; ta=A.p; tb=r.pts[A.i+1]; tn=A.nr; }
       ln.geometry.setDrawRange(i0,i1>i0?i1-i0+1:0);
       if(r.ribbons&&r.ribbons[i]){ const a=Math.max(0,i0-r.rib0), z=Math.max(0,i1-r.rib0); r.ribbons[i].geometry.setDrawRange(a*6,Math.max(0,z-a)*6); }
-      setTail(r,i,ta,tb,tn); });
+      setTail(r,i,ta,tb,tn,pt.dir>0?B.i:A.i+1);
+      if(r.kind==='cat'&&r.par) catSegs.push({r,i0,i1,A,B,dir:pt.dir}); });
     r.frac=tot; }
+  if(HULL.cat) drawCleanMap(catSegs);
   SIM.bots.forEach((b,j)=>{ const st=botAt(j,T); b.state=st; b.robot.visible=b.tether.visible=!!st; if(!st) b.route.visible=false; if(st) placeBot(b,st.r,st.s,snap,st.alt,st.travel,st.back); });
   // halfway through the propeller clean the shaft is turned 180° on the turning gear while the robot waits clear: turn the model with it
   { const r=SIM.runs.find(q=>q.shaftTurn); let rot=0;
@@ -2756,7 +2804,7 @@ function goView(name,instant){
   if(instant){ camera.position.copy(pos); controls.target.copy(tg); controls.update(); } else flyTo(pos,tg);
   setViewPressed(name);
 }
-function setViewPressed(name){ document.querySelectorAll('#views button[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===name))); }
+function setViewPressed(name){ const sel=$('viewSel'); if(sel) sel.value=name||''; }                     // the dropdown shows the current view, or Free once the camera's moved by hand
 
 /* ================= UI ================= */
 const $=id=>document.getElementById(id);
@@ -2835,7 +2883,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && selected) select
 function setSheet(open){ panel.classList.toggle('collapsed',!open); $('panelToggle').setAttribute('aria-expanded',String(open)); setTimeout(resize,30); }
 $('panelToggle').onclick=()=>setSheet(panel.classList.contains('collapsed'));
 
-$('views').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; if(b.dataset.act==='demo'){ DEMO.on?stopDemo():startDemo(); return; } if(DEMO.on) stopDemo(); if(b.dataset.act==='vessel') openVessel(); else if(b.dataset.act==='night') setNight(!NIGHT); else goView(b.dataset.view); });
+$('viewSel').addEventListener('change',e=>{ const v=e.target.value; if(!v) return; if(DEMO.on) stopDemo(); goView(v); });   // pick a view
 // day and night: night darkens the sky, lights and water so the robots' own lights stand out
 function setNight(on){ NIGHT=on; document.querySelector('.stage').classList.toggle('night',on); 
   hemi.intensity=on?0.16:0.78; hemi.color.set(on?0x9fb3d6:0xffffff); hemi.groundColor.set(on?0x0b1420:0x5d6c78);
@@ -3098,8 +3146,9 @@ function loop(now){
       for(const b of SIM.bots){ const ud=b.robot.userData, st=b.state, wet=b.robot.visible&&b.robot.position.y<draught-0.02;
         if(st&&/^Cleaning/.test(st.status)) for(const d of ud.drums) d.rotation.z+=d.userData.dir*w*dtw;
         if(DEMO.on&&!wet){ b.robot.visible=false; b.tether.visible=false; b.route.visible=false; }
-        if(ud.glows){ const sc=Math.max(0.32,camera.position.distanceTo(b.robot.position)*(NIGHT?0.018:0.006)); for(const gl of ud.glows){ gl.visible=wet; gl.scale.setScalar(sc); } }
-        if(ud.spots) for(const L of ud.spots) L.intensity=wet?(NIGHT?2.0:1.0):0; } }
+        if(ud.glows){ const sc=Math.max(0.36,camera.position.distanceTo(b.robot.position)*(NIGHT?0.018:0.006)); for(const gl of ud.glows){ gl.visible=wet; gl.scale.setScalar(sc); }
+          for(const hl of ud.halos||[]){ hl.visible=wet; hl.scale.setScalar(Math.max(1.1,sc*2.6)); } }
+        if(ud.spots) for(const L of ud.spots) L.intensity=wet?(NIGHT?2.6:1.3):0; } }
     if(SIM.follow&&SIM.bots.length){ const b=SIM.bots.find(q=>q.state&&q.state.busy)||SIM.bots[0]; const dv=b.robot.position.clone().sub(controls.target).multiplyScalar(0.12); controls.target.add(dv); camera.position.add(dv); } }
   renderer.render(scene,camera);
 }
@@ -3117,21 +3166,34 @@ buildCrew();
    Ship frame for the catamaran: x from the transom forward, h above the keel, z to starboard.               */
 const CAT078={name:'OCEAN TRACKER', loa:26.49, lwl:25.0, beam:7.6, hullB:2.3, spacing:5.3, depth:2.75, draught:1.16};
 function catGeo(P){
-  const L=P.lwl+Math.min(0.5,Math.max(0,P.loa-P.lwl)), plat=Math.max(0,P.loa-L);   // hull length (near-plumb bow); the rest is stern platforms
-  const c=P.spacing/2, b=P.hullB/2, Dc=P.depth, T=P.draught, lwl=P.lwl;
-  const xT=0.5*L, xKr=0.64*L, xK1=lwl-0.6, hF=Math.min(0.55,T*0.5), hw=Math.min(Dc-0.5,T+0.8);
-  const stemX=h=>h>=T?lwl+(h-T)*(L-lwl)/Math.max(0.1,Dc-T):xK1+(h-hF)*(lwl-xK1)/Math.max(0.1,T-hF);
-  const hk=x=>x<=xKr?0:Math.min(hF,hF*Math.pow((x-xKr)/(xK1-xKr),2));            // keel rising into the forefoot
-  const xEnd=h=>h>=hF?stemX(h):xKr+(xK1-xKr)*Math.sqrt(Math.max(0,h)/hF);
-  const f=(x,h)=>{ if(x<=xT) return 1; const e=xEnd(h); if(e<=xT) return 0; return Math.pow(clamp((e-x)/(e-xT),0,1),0.6); };
-  const hc=x=>hk(x)+0.42+0.38*clamp((x-xT)/(L-xT),0,1);                              // chine, deadrise steepening forward
-  const w=(x,h)=>{ const k=hk(x), C=hc(x); if(h<k) return 0; const b0=b*f(x,h);
+  // lines taken off the One2Three general arrangement (Incat Hull 078): keel line from the centreline profile, plan shape from
+  // the below-decks plan, stem and sheer from the profile view; scaled to the vessel's own length and draught
+  const L=P.lwl+Math.min(1.0,Math.max(0,P.loa-P.lwl)), plat=Math.max(0,P.loa-L);    // hull length to the top of the stem; the rest is stern platforms
+  const c=P.spacing/2, b=P.hullB/2, Dc=P.depth, T=P.draught, lwl=P.lwl, kL=L/26, kT=T/1.16, sh=0.53*Dc/2.75, Db=Dc+sh;
+  const sm=t=>{ t=clamp(t,0,1); return t*t*(3-2*t); };
+  // keel height above its lowest point (about 13 m from the transom), as a fair line fitted to the GA's centreline profile:
+  // a flat run aft at 0.6 m to about 5 m, a short rounded knuckle, then a steady curve down to the lowest point, and a steady
+  // rise forward into the forefoot (0.62 m at 24.4 m) - no waves between the measured points
+  const xF0=5.0*kL, xLow=13.0*kL, xK1=24.4*kL, kAft=0.6*kT, hF=0.62*kT, fil=0.3*kL, hw=Math.min(Dc-0.5,T+0.8), xT=0.5*L, xKr=xLow;
+  const hk=x=>{ if(x<=xF0) return kAft; if(x<xLow){ const u=x-xF0, ue=u<fil?u*u/(2*fil):u-fil/2, t=clamp(ue/(xLow-xF0-fil/2),0,1); return kAft*Math.pow(1-t,2.5); }
+    if(x>=xK1) return hF; return hF*Math.pow((x-xLow)/(xK1-xLow),2.5); };
+  const stemX=h=>h>=T?lwl+(h-T)*(L-lwl)/Math.max(0.1,Db-T):xK1+(lwl-xK1)*Math.sqrt(clamp((h-hF)/Math.max(0.05,T-hF),0,1));   // raked stem; rounded forefoot below the waterline
+  const xEnd=h=>{ if(h>=hF) return stemX(h); let lo=xKr, hi=xK1; for(let k=0;k<24;k++){ const m=(lo+hi)/2; if(hk(m)<h) lo=m; else hi=m; } return lo; };   // where the forefoot rises past h
+  const Dt=x=>Dc+sh*Math.pow(sm((x-0.72*L)/(0.28*L)),1.4);                              // sheer rising to the bow
+  // plan shape: the outer side runs straight to about 81% of the length then curves in hard to the bow; the inner (tunnel) side
+  // starts drawing in at about half the length and tapers gradually
+  const f=(x,h,side)=>{ const e=xEnd(h); if(x>=e) return 0;
+    if(side<0){ const xs=Math.min(0.5*L,e*0.8); if(x<=xs) return 1; const t=(x-xs)/(e-xs); return Math.min(Math.sqrt(Math.max(0,1-Math.pow(t,2.3))),3.8*(1-t)); }   // sharp at the stem
+    const xs=Math.min(0.81*L,e*0.85); if(x<=xs) return 1; const t=(x-xs)/(e-xs); return Math.max(0,1-Math.pow(t,1.2)); };
+  const aftF=x=>1-sm((x-5.0*kL)/(1.2*kL));                                               // 1 on the flat run aft, 0 forward of the knuckle
+  const hc=x=>hk(x)+(0.42+0.38*clamp((x-xT)/(L-xT),0,1))*kT*(1-0.95*aftF(x));          // chine: deadrise steepening forward, flat on the run aft
+  const w=(x,h,side)=>{ side=side||1; const k=hk(x), C=hc(x); if(h<k) return 0; const b0=b*f(x,h,side);
     return h<=C?b0*(h-k)/Math.max(1e-3,C-k):b0*(1+0.03*(h-C)/Math.max(0.1,Dc-C)); };
-  const bc=x=>b*f(x,hc(x));
-  const pt=(face,x,q,s)=>{ if(face==='bot'){ const u=1-2*q, C=hc(x), k=hk(x), h=k+(C-k)*Math.abs(u); x=Math.min(x,xEnd(h)); return [x,h,s*c+s*u*bc(x)]; }
-    x=Math.min(x,xEnd(q)); return [x,q,s*c+s*(face==='out'?1:-1)*w(x,q)]; };
-  return {P,L,plat,c,b,Dc,T,lwl,xT,xKr,xK1,hF,hw,stemX,hk,xEnd,f,hc,w,bc,pt,
-    xp:2.1, hp:-0.1, rp:0.42};                                                        // propeller centre and radius
+  const bc=(x,side)=>b*f(x,hc(x),side||1);
+  const pt=(face,x,q,s)=>{ if(face==='bot'){ const u=1-2*q, C=hc(x), k=hk(x), h=k+(C-k)*Math.abs(u); x=Math.min(x,xEnd(h)); return [x,h,s*c+s*u*bc(x,u>=0?1:-1)]; }
+    x=Math.min(x,xEnd(q)); return [x,q,s*c+s*(face==='out'?1:-1)*w(x,q,face==='out'?1:-1)]; };
+  return {P,L,plat,c,b,Dc,Db,Dt,T,lwl,xT,xKr,xK1,hF,hw,stemX,hk,xEnd,f,hc,w,bc,pt,
+    xp:2.5*kL, hp:0.0, rp:0.38*kT, xr:1.7*kL};                                         // propeller centre and radius, rudder position (from the GA)
 }
 const CW=(x,h,z)=>new V3(x-HULL.G.L/2,h,z);
 const catX=ds=>(ds.x0+ds.x1)/2-X0+HULL.G.L/2;                                          // deployment point frame on the catamaran
@@ -3143,19 +3205,20 @@ function catSurf(face,x,q,s,off){ const G=HULL.G, e=0.03, dq=face==='bot'?0.01:0
 // tether or point inside a demihull: rest it on the nearest face (side or V bottom)
 function catContact(pts){ const G=HULL.G, flags=new Uint8Array(pts.length), clr=0.05;
   for(let i=1;i<pts.length-1;i++){ const p=pts[i], x=p.x+G.L/2, h=p.y, z=p.z; if(h>G.Dc||x<0||x>G.L) continue;
-    for(const s of [1,-1]){ const zc=s*G.c, dz=z-zc, k=G.hk(x); if(h<k-0.002) continue; const W=G.w(x,Math.max(h,0)); if(Math.abs(dz)>=W+clr) continue;
-      flags[i]=1; const C=G.hc(x), bcx=G.bc(x), hv=bcx>1e-3?k+(C-k)*Math.min(1,Math.abs(dz)/bcx):k;
+    for(const s of [1,-1]){ const zc=s*G.c, dz=z-zc, k=G.hk(x); if(h<k-0.002) continue; const sd=dz*s>=0?1:-1, W=G.w(x,Math.max(h,0),sd); if(Math.abs(dz)>=W+clr) continue;
+      flags[i]=1; const C=G.hc(x), bcx=G.bc(x,sd), hv=bcx>1e-3?k+(C-k)*Math.min(1,Math.abs(dz)/bcx):k;
       const dSide=W+clr-Math.abs(dz), dBot=h<=C?h-hv+clr:1e9;
       if(dBot<dSide) p.y=hv-clr; else p.z=zc+(Math.abs(dz)<1e-6?s:Math.sign(dz))*(W+clr); break; } }
   return flags; }
 // wetted surface of both hulls at a draught: V bottom and sides below the waterline, plus the immersed transoms
 function catWSA(G){ const cache={};
   const at=T=>{ const key=Math.round(T*100); if(cache[key]!=null) return cache[key]; let A=0; const dx=0.05;
-    for(let x=dx/2;x<G.L;x+=dx){ const k=G.hk(x); if(T<=k) continue; const C=G.hc(x), bcx=G.bc(x);
-      if(T>=C){ const hm=(C+T)/2, dw=(G.w(x+dx,hm)-G.w(Math.max(0,x-dx),hm))/(2*dx), sl=Math.sqrt(1+dw*dw);
-        A+=(2*Math.hypot(bcx,C-k)+2*(T-C)*sl)*dx; }
-      else { const fr=(T-k)/(C-k); A+=2*Math.hypot(bcx*fr,T-k)*dx; } }
-    let tr=0; for(let h=0.005;h<T;h+=0.01) tr+=2*G.w(0,h)*0.01;
+    for(let x=dx/2;x<G.L;x+=dx){ const k=G.hk(x); if(T<=k) continue; const C=G.hc(x);
+      for(const sd of [1,-1]){ const bcx=G.bc(x,sd);                                       // outer and inner halves of the section
+        if(T>=C){ const hm=(C+T)/2, dw=(G.w(x+dx,hm,sd)-G.w(Math.max(0,x-dx),hm,sd))/(2*dx), sl=Math.sqrt(1+dw*dw);
+          A+=(Math.hypot(bcx,C-k)+(T-C)*sl)*dx; }
+        else { const fr=(T-k)/(C-k); A+=Math.hypot(bcx*fr,T-k)*dx; } } }
+    let tr=0; for(let h=0.005;h<T;h+=0.01) tr+=(G.w(0,h,1)+G.w(0,h,-1))*0.01;
     return cache[key]=2*(A+tr); };
   return {at, rate:T=>(at(T+0.05)-at(Math.max(0.05,T-0.05)))/0.1}; }
 // deployment points: forward and aft, each side, at the deck edge (ship x as the shared code expects)
@@ -3182,7 +3245,7 @@ function catRoute(ds,top,entry,face,q,xt){ const G=HULL.G, s=ds.s, xd=clamp(catX
 function catTopEntry(ds){ const G=HULL.G, s=ds.s, xd=catX(ds), e=G.c+G.w(xd,G.Dc), top=CW(xd,G.Dc+0.9,s*(e+0.35)), entry=top.clone(); entry.y=Math.min(top.y,draught); return {top,entry}; }
 // cleaning tracks for a catamaran zone: lanes along the hull at constant depth (sides) or constant girth (V bottom)
 // girth round one hull below the waterline at frame x: outer waterline, down the outer side, round the V, up the tunnel side
-function catGirthParts(G,x){ const T=draught, C=G.hc(x), k=G.hk(x), hyp=Math.hypot(G.bc(x),C-k);
+function catGirthParts(G,x){ const T=draught, C=G.hc(x), k=G.hk(x), hyp=(Math.hypot(G.bc(x,1),C-k)+Math.hypot(G.bc(x,-1),C-k))/2;
   if(T<=k) return null; if(T>=C) return {a:T-C,bh:hyp,vmin:0,vmax:1,C,T};
   const fr=(T-k)/(C-k); return {a:0,bh:hyp*fr,vmin:0.5-fr/2,vmax:0.5+fr/2,C,T}; }
 const catGirth=(G,x)=>{ const g=catGirthParts(G,x); return g?2*g.a+2*g.bh:0; };
@@ -3191,40 +3254,50 @@ function catGirthPt(G,x,u){ const g=catGirthParts(G,x); if(!g) return null; cons
   return {face:'in',q:g.C+(d-g.a-2*g.bh)}; }
 function catUAt(G,x,face,q){ const g=catGirthParts(G,x); if(!g) return null; const tot=2*g.a+2*g.bh; if(tot<1e-6) return null;
   const d=face==='out'?g.T-q:face==='bot'?g.a+(q-g.vmin)/Math.max(1e-6,g.vmax-g.vmin)*2*g.bh:g.a+2*g.bh+(q-g.C); return clamp(d/tot,0,1); }
+function catURanges(spec,G,x){ if(spec.band==null&&spec.below==null) return spec.u;
+  const t=catGirth(G,x); if(t<=0) return []; const B=spec.band!=null?spec.band:spec.below, f=Math.min(0.5,B/t);
+  return spec.band!=null?[[0,f],[1-f,1]]:(f<0.5?[[f,1-f]]:[]); }
 function catTrack(cfg,lane){ const G=HULL.G, s=cfg.side, ds=dsOf(cfg.ds), xd=catX(ds), {top,entry}=catTopEntry(ds), pts=[], nrm=[], par=[];
   if(cfg.sub==='niche') return catNicheTrack(cfg,lane,ds,top,entry);
   const sp=cfg.spec, x0=Math.max(0.2,sp.x[0]*G.L), x1=Math.min(G.L-0.1,sp.x[1]*G.L), tot=catGirth(G,(x0+x1)/2)||catGirth(G,x0);
   // lanes run fore and aft at a constant position round the girth, spaced by the lane spacing
-  const us=[]; for(const [a,b] of sp.u){ const n=Math.max(1,Math.round((b-a)*tot/lane)); for(let i=0;i<n;i++) us.push(a+(b-a)*(i+0.5)/n); }
-  const ok=(x,u)=>{ const g=catGirthPt(G,x,u); return !!g&&(g.face==='bot'?G.bc(x)>0.05:G.w(x,g.q)>0.05); };
+  // each lane is a girth position as a function of x: fixed fractions, or for the waterline band a fixed distance from each
+  // waterline (so the lane keeps a constant depth from the stern forward), or for the zone below it a share of what's left
+  const us=[], tg=x=>catGirth(G,x);
+  if(sp.band!=null){ const n=Math.max(1,Math.round(sp.band/lane)), ds=[...Array(n)].map((_,i)=>sp.band*(i+0.5)/n);
+    ds.forEach(d=>us.push(x=>{ const t=tg(x); return t>2*d?d/t:null; })); ds.slice().reverse().forEach(d=>us.push(x=>{ const t=tg(x); return t>2*d?1-d/t:null; })); }
+  else if(sp.below!=null){ const B=sp.below, n=Math.max(1,Math.round(Math.max(0.1,tot-2*B)/lane));
+    for(let i=0;i<n;i++){ const fr=(i+0.5)/n; us.push(x=>{ const t=tg(x); return t>2*B+0.05?(B+fr*(t-2*B))/t:null; }); } }
+  else for(const [a,b] of sp.u){ const n=Math.max(1,Math.round((b-a)*tot/lane)); for(let i=0;i<n;i++){ const u=a+(b-a)*(i+0.5)/n; us.push(()=>u); } }
+  const ok=(x,uf)=>{ const u=uf(x); if(u==null) return false; const g=catGirthPt(G,x,u); return !!g&&(g.face==='bot'?Math.min(G.bc(x,1),G.bc(x,-1))>0.05:G.w(x,g.q,g.face==='in'?-1:1)>0.05); };
   const span=u=>{ let xa=null,xb=null; for(let x=x0;x<=x1+1e-6;x+=0.1){ if(ok(x,u)){ if(xa===null) xa=x; xb=x; } } return [xa,xb]; };
   const sps=us.map(span), first=sps.findIndex(v=>v[0]!==null); if(first<0) return {pts:[top,entry],nrm:[new V3(0,0,s),new V3(0,0,s)],lanes:0,transitN:2,par:[null,null],area:0};
   let dir=Math.abs(xd-sps[first][0])<=Math.abs(xd-sps[first][1]);
-  const g0=catGirthPt(G,dir?sps[first][0]:sps[first][1],us[first]), r0=catRoute(ds,top,entry,g0.face,g0.q,dir?sps[first][0]:sps[first][1]);
+  const xs0=dir?sps[first][0]:sps[first][1], g0=catGirthPt(G,xs0,us[first](xs0)), r0=catRoute(ds,top,entry,g0.face,g0.q,dir?sps[first][0]:sps[first][1]);
   r0.pts.forEach((p,i)=>{ pts.push(p); nrm.push(r0.nrm[i]); par.push(null); });
   const transitN=pts.length; let lanes=0;
   us.forEach((u,i)=>{ const [xa,xb]=sps[i]; if(xa===null||xb-xa<0.4) return; const a=dir?xa:xb, b=dir?xb:xa, n=Math.max(1,Math.ceil(Math.abs(b-a)/0.25));
-    for(let k=0;k<=n;k++){ const x=a+(b-a)*k/n, g=catGirthPt(G,x,u); if(!g) continue; const r=catSurf(g.face,x,g.q,s,0.03); pts.push(r.p); nrm.push(r.n); par.push({face:g.face,q:g.q,x}); }
+    for(let k=0;k<=n;k++){ const x=a+(b-a)*k/n, uu=u(x); if(uu==null) continue; const g=catGirthPt(G,x,uu); if(!g) continue; const r=catSurf(g.face,x,g.q,s,0.03); pts.push(r.p); nrm.push(r.n); par.push({face:g.face,q:g.q,x}); }
     dir=!dir; lanes++; });
   return {pts,nrm,lanes,transitN,par,area:catZoneArea(sp)}; }
 const zoneArea=r=>r.area!=null?r.area:r.cleanLen*SIM.lane;     // catamaran zones use their measured surface; tanker zones their track
 function catZoneArea(spec){ const G=HULL.G, dx=0.05; let A=0;
   if(spec.niche) return 2*0.7*0.58+10*Math.PI*0.105*0.264+Math.PI*0.1*5.8+0.1;          // rudder faces, blade faces, shaft, bracket
-  const x0=spec.x[0]*G.L, x1=spec.x[1]*G.L, fu=spec.u.reduce((a,[p,q])=>a+(q-p),0);
-  for(let x=x0+dx/2;x<x1;x+=dx) A+=fu*catGirth(G,x)*dx;
-  if(spec.transom){ for(let h=0.005;h<draught;h+=0.01) A+=2*G.w(0,h)*0.01; }               // immersed transom
+  const x0=spec.x[0]*G.L, x1=spec.x[1]*G.L;
+  for(let x=x0+dx/2;x<x1;x+=dx){ const t=catGirth(G,x); A+=catURanges(spec,G,x).reduce((a,[p,q])=>a+(q-p),0)*t*dx; }
+  if(spec.transom){ for(let h=0.005;h<draught;h+=0.01) A+=(G.w(0,h,1)+G.w(0,h,-1))*0.01; }               // immersed transom
   return A; }
 function catNicheTrack(cfg,lane,ds,top,entry){ const G=HULL.G, s=cfg.side, zc=s*G.c, pts=[], nrm=[], par=[];
   const r0=catRoute(ds,top,entry,'bot',0.5,3.2); r0.pts.forEach((p,i)=>{ pts.push(p); nrm.push(r0.nrm[i]); par.push(null); });
   const transitN=pts.length, P0={face:'bot',q:0.5,x:3.2}; let lanes=0;
   const push=(x,h,z,n)=>{ pts.push(CW(x,h,z)); nrm.push(n); par.push(P0); };
   // rudder: both faces, lanes at constant depth
-  for(let h=0.0, k=0; h>=-0.5; h-=lane, k++){ for(const sd of (k%2?[-1,1]:[1,-1])){ const n=new V3(0,0,sd);
-      for(let i=0;i<=6;i++){ const x=sd>0?0.25+0.7*i/6:0.95-0.7*i/6; push(x,h,zc+sd*0.07,n); } lanes++; } }
+  for(let h=G.hk(G.xr)-0.06, k=0; h>=0.0; h-=lane, k++){ for(const sd of (k%2?[-1,1]:[1,-1])){ const n=new V3(0,0,sd);
+      for(let i=0;i<=6;i++){ const x=sd>0?G.xr-0.22+0.44*i/6:G.xr+0.22-0.44*i/6; push(x,h,zc+sd*0.06,n); } lanes++; } }
   // propeller: radial passes across both faces of each of the five blades
   for(const [fx,nx] of [[G.xp-0.1,-1],[G.xp+0.1,1]]){ const n=new V3(nx,0,0);
     for(let k=0;k<5;k++){ const th=k*2*Math.PI/5+0.3;
-      for(let j=0;j<2;j++){ for(let i=0;i<=6;i++){ const r=j?0.4-0.28*i/6:0.12+0.28*i/6, o=(j?0.06:-0.06); push(fx,G.hp+r*Math.cos(th)-o*Math.sin(th),zc+r*Math.sin(th)+o*Math.cos(th),n); } lanes++; } } }
+      for(let j=0;j<2;j++){ for(let i=0;i<=6;i++){ const r=j?0.36-0.24*i/6:0.12+0.24*i/6, o=(j?0.06:-0.06); push(fx,G.hp+r*Math.cos(th)-o*Math.sin(th),zc+r*Math.sin(th)+o*Math.cos(th),n); } lanes++; } } }
   // shaft and bracket: a pass along the shaft
   for(let i=0;i<=10;i++){ const x=G.xp+0.3+5.8*i/10; push(x,G.hp+0.06+0.07*(x-G.xp),zc+0.09,new V3(0,0,s)); }
   return {pts,nrm,lanes,transitN,par,area:catZoneArea({niche:true})}; }
@@ -3243,50 +3316,106 @@ function catTravelPose(r,sT,u){ const ds=dsOf(r.dsKey||r.cfg.ds), {top,entry}=ca
     const cum=new Float64Array(rt.pts.length); for(let i=1;i<rt.pts.length;i++) cum[i]=cum[i-1]+rt.pts[i].distanceTo(rt.pts[i-1]); rt.cum=cum; rt.len=cum[cum.length-1]; r._rt[key]=rt; }
   const rt=r._rt[key], ps=routePose(rt,u); ps.route=rt; return ps; }
 // ---- the 3D model ----
+const CAT_ZONE_COL={SBW:'#8e44ad',PBW:'#b07cc6',SST:'#e74c3c',PST:'#ef8a80',SWL:'#2ecc40',PWL:'#86e08f',SMD:'#f1c40f',PMD:'#f6dc6b',SAL:'#5b8db8',PAL:'#9ab8d4'};
 const CAT_PAINT={af:new THREE.Color('#7d8a92'),boot:new THREE.Color('#dde2e5'),top:new THREE.Color('#1e4fae'),strake:new THREE.Color('#3a3f45'),yel:new THREE.Color('#f2c200')};
+// the catamaran's paint lines (antifouling, waterline band, fender line, topsides) worked out per pixel from height and position,
+// so they're crisp and straight rather than following the mesh's vertices; with Cleaning zones on, the zone colours show below
+const CAT_PAINT_SH={u:{uCatZones:{value:0},uCatHL:{value:12},uCDc:{value:2.75},uCSh:{value:0.53},uCYel:{value:CAT_PAINT.yel},uCAF:{value:CAT_PAINT.af},uCBoot:{value:CAT_PAINT.boot},uCTop:{value:CAT_PAINT.top},uCStrake:{value:CAT_PAINT.strake}},
+  decl:'uniform float uCatZones; uniform float uCatHL; uniform float uCDc; uniform float uCSh; uniform vec3 uCYel; uniform vec3 uCAF; uniform vec3 uCBoot; uniform vec3 uCTop; uniform vec3 uCStrake;\n',
+  glsl:'  { float ph=vSlimeW.y, px=vSlimeW.x+uCatHL, xf=px/(2.0*uCatHL); bool st=vSlimeW.z>0.0;\n'+
+       '    if(uCatZones>0.5&&ph<uWL){ vec3 zc = xf>=0.73 ? (st?uZBs:uZBp) : (xf>=0.5 ? (st?uZMs:uZMp) : (xf>=0.15 ? (ph>uWL-uZBand ? (st?uZWs:uZWp) : (st?uZLs:uZLp)) : (st?uZSs:uZSp)));\n'+
+       '      diffuseColor.rgb = zc; }\n'+
+       '    else { float tS=clamp((xf-0.72)/0.28,0.0,1.0), dtop=uCDc+uCSh*pow(tS*tS*(3.0-2.0*tS),1.4);\n'+
+       '      diffuseColor.rgb = ph<uWL-0.1 ? uCAF : (ph<uWL+0.22 ? uCBoot : ((xf>0.7&&ph>dtop-0.3) ? uCYel : ((ph>uCDc-0.14&&px<0.83*2.0*uCatHL) ? uCStrake : uCTop))); } }\n'};
+// zone colours for the per-pixel zones view (bow, midships, aft waterline band, aft lower, stern; starboard and port)
+{ const zc=k=>({value:new THREE.Color(CAT_ZONE_COL[k])}); const C=CAT_PAINT_SH;
+  Object.assign(C.u,{uZBand:{value:0.4},uZBs:zc('SBW'),uZBp:zc('PBW'),uZMs:zc('SMD'),uZMp:zc('PMD'),uZWs:zc('SWL'),uZWp:zc('PWL'),uZLs:zc('SAL'),uZLp:zc('PAL'),uZSs:zc('SST'),uZSp:zc('PST')});
+  C.decl+='uniform float uZBand; uniform vec3 uZBs; uniform vec3 uZBp; uniform vec3 uZMs; uniform vec3 uZMp; uniform vec3 uZWs; uniform vec3 uZWp; uniform vec3 uZLs; uniform vec3 uZLp; uniform vec3 uZSs; uniform vec3 uZSp;\n'; }
 let catGroup=null, catHulls=[], catWL=[], catDpGroup=null;
 function catSecPt(G,s,x,sig){ // section parameter sig: 0 deck edge (outer) .. 0.3 chine .. 0.7 chine (inner) .. 1 wet deck
   const C=G.hc(x);
-  if(sig<=0.3){ const h=G.Dc-(G.Dc-C)*(sig/0.3); return {face:'out',q:h,p:G.pt('out',x,h,s)}; }
+  if(sig<=0.3){ const top=G.Dt?G.Dt(x):G.Dc, h=top-(top-C)*(sig/0.3); return {face:'out',q:h,p:G.pt('out',x,h,s)}; }
   if(sig<=0.7){ const v=(sig-0.3)/0.4; return {face:'bot',q:v,p:G.pt('bot',x,v,s)}; }
   const h=C+(G.hw-C)*((sig-0.7)/0.3); return {face:'in',q:h,p:G.pt('in',x,h,s)}; }
-function catPaint(zoneMode){ const G=HULL.G, T=draught;
+function catPaint(zoneMode){ const G=HULL.G, T=draught; CAT_PAINT_SH.u.uCatZones.value=zoneMode?1:0;
   for(const m of catHulls){ const col=m.geometry.attributes.color, ud=m.userData.meta, c=new THREE.Color();
     for(let i=0;i<ud.length;i++){ const {h,face,x,q}=ud[i]; let z=null;
-      if(zoneMode&&h<T){ const u=catUAt(G,x,face,q); if(u!=null) z=CAT_ZONES.find(Z=>Z[4]===m.userData.s&&!Z[5].niche&&x/G.L>=Z[5].x[0]&&x/G.L<=Z[5].x[1]&&Z[5].u.some(([a,b])=>u>=a&&u<=b)); }
+      if(zoneMode&&h<T){ const u=catUAt(G,x,face,q); if(u!=null) z=CAT_ZONES.find(Z=>Z[4]===m.userData.s&&!Z[5].niche&&x/G.L>=Z[5].x[0]&&x/G.L<=Z[5].x[1]&&catURanges(Z[5],G,x).some(([a,b])=>u>=a&&u<=b)); }
       if(z) c.set(z[6]);
       else c.copy(h<T-0.1?CAT_PAINT.af:h<T+0.22?CAT_PAINT.boot:(h>G.Dc-0.14&&x<0.83*G.L)?CAT_PAINT.strake:CAT_PAINT.top);
       col.setXYZ(i,c.r,c.g,c.b); }
     col.needsUpdate=true; } }
 function catBuild(){ const G=HULL.G; if(catGroup){ scene.remove(catGroup); catGroup.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); }
   catGroup=new THREE.Group(); catGroup.userData.world=true; scene.add(catGroup); catHulls=[]; catWL=[];
-  const hullMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.65,metalness:0.05,side:THREE.DoubleSide}); slimeify(hullMat);
+  const hullMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.65,metalness:0.05,side:THREE.DoubleSide}); slimeify(hullMat,CAT_PAINT_SH);
+  CAT_PAINT_SH.mask=true; CAT_PAINT_SH.u.uCatHL.value=G.L/2; CAT_PAINT_SH.u.uCDc.value=G.Dc; CAT_PAINT_SH.u.uCSh.value=G.Db-G.Dc;
   const NX=120, NS=96;
   for(const s of [1,-1]){ const pos=[], meta=[], idx=[];
-    for(let i=0;i<=NX;i++){ const x=G.L*i/NX; for(let j=0;j<=NS;j++){ const q=catSecPt(G,s,x,j/NS); pos.push(...CW(...q.p).toArray()); meta.push({h:q.p[1],face:q.face,x:q.p[0],q:q.q}); } }
+    const cuv=[]; for(let i=0;i<=NX;i++){ const x=G.L*i/NX; for(let j=0;j<=NS;j++){ const q=catSecPt(G,s,x,j/NS); cuv.push(i/NX,(s>0?0:0.5)+0.5*j/NS); pos.push(...CW(...q.p).toArray()); meta.push({h:q.p[1],face:q.face,x:q.p[0],q:q.q}); } }
     for(let i=0;i<NX;i++) for(let j=0;j<NS;j++){ const a=i*(NS+1)+j, b=a+NS+1; idx.push(a,b,a+1,b,b+1,a+1); }
-    const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); g.setAttribute('color',new THREE.Float32BufferAttribute(new Array(pos.length).fill(1),3));
+    const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); g.setAttribute('color',new THREE.Float32BufferAttribute(new Array(pos.length).fill(1),3)); g.setAttribute('catUv',new THREE.Float32BufferAttribute(cuv,2));
     g.setIndex(idx); g.computeVertexNormals(); const m=new THREE.Mesh(g,hullMat); m.userData={s,meta}; catGroup.add(m); catHulls.push(m);
-    // transom cap
+    // transom: painted like the hull (antifouling below the waterline band, topsides above)
     const cap=[CW(0,(G.hw+G.Dc)/2,s*G.c)]; for(let j=0;j<=NS;j++) cap.push(CW(...catSecPt(G,s,0,j/NS).p));
     const cp=[], ci=[]; cap.forEach(v=>cp.push(...v.toArray())); for(let j=1;j<cap.length-1;j++) ci.push(0,j,j+1); ci.push(0,cap.length-1,1);
-    const cg=new THREE.BufferGeometry(); cg.setAttribute('position',new THREE.Float32BufferAttribute(cp,3)); cg.setIndex(ci); cg.computeVertexNormals();
-    catGroup.add(new THREE.Mesh(cg,new THREE.MeshStandardMaterial({color:'#1e4fae',roughness:0.7,side:THREE.DoubleSide})));
-    // propeller, shaft, bracket, rudder and interceptor
-    const zc=s*G.c, bronze=new THREE.MeshStandardMaterial({color:'#b8893a',metalness:0.75,roughness:0.35}), steel=new THREE.MeshStandardMaterial({color:'#8d969e',metalness:0.6,roughness:0.4});
-    const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.12,0.3,16),bronze); hub.rotation.z=Math.PI/2; hub.position.copy(CW(G.xp,G.hp,zc)); catGroup.add(hub);
-    for(let k=0;k<5;k++){ const bg=new THREE.CircleGeometry(0.17,18); bg.scale(0.62,1.55,1); bg.rotateY(Math.PI/2+0.45);   // blade in the disc plane, with pitch
-      const bl=new THREE.Mesh(bg,bronze), th=k*2*Math.PI/5+0.3; bl.rotation.x=th; bl.position.copy(CW(G.xp,G.hp+0.25*Math.cos(th),zc+0.25*Math.sin(th))); catGroup.add(bl); }
-    const a=CW(G.xp+0.15,G.hp,zc), bpt=CW(8.6,0.46,zc), sh=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,a.distanceTo(bpt),10),steel);
+    const cg=new THREE.BufferGeometry(); cg.setAttribute('position',new THREE.Float32BufferAttribute(cp,3)); cg.setAttribute('color',new THREE.Float32BufferAttribute(new Array(cp.length).fill(1),3));
+    cg.setIndex(ci); cg.computeVertexNormals(); catGroup.add(new THREE.Mesh(cg,hullMat));
+    // stern fittings, from the robot's photos: transom outlets, bolt row and interceptor with actuator housings; fabricated plate
+    // rudder; A-bracket; five-blade propeller; anode bar; draught marks
+    const zc=s*G.c, k0=G.hk(0), M=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:0.55},o||{}));
+    const bronze=M('#b8893a',{metalness:0.75,roughness:0.35,side:THREE.DoubleSide}), steel=M('#8d969e',{metalness:0.6,roughness:0.4}), dark=M('#1a1f24',{roughness:0.8}), act=M('#2a2e33',{metalness:0.3});
+    const aft=(g,h,z,m)=>{ g.rotateY(-Math.PI/2); const o=new THREE.Mesh(g,m); o.position.copy(CW(-0.006,h,z)); catGroup.add(o); return o; };   // flat on the transom, facing aft
+    const rr=(w,h,r)=>{ const sh=new THREE.Shape(); sh.moveTo(-w/2+r,-h/2); sh.lineTo(w/2-r,-h/2); sh.quadraticCurveTo(w/2,-h/2,w/2,-h/2+r); sh.lineTo(w/2,h/2-r); sh.quadraticCurveTo(w/2,h/2,w/2-r,h/2);
+      sh.lineTo(-w/2+r,h/2); sh.quadraticCurveTo(-w/2,h/2,-w/2,h/2-r); sh.lineTo(-w/2,-h/2+r); sh.quadraticCurveTo(-w/2,-h/2,-w/2+r,-h/2); return new THREE.ShapeGeometry(sh,8); };
+    const hO=Math.min(G.T-0.2,k0+0.38);
+    for(const dz of [-0.5,0.5]) aft(rr(0.74,0.3,0.08),hO,zc+dz,dark);                                     // two large outlets
+    for(let z=-1.0;z<=1.0001;z+=0.16) aft(new THREE.CircleGeometry(0.013,10),hO-0.23,zc+z,dark);           // bolt row
+    { const ic=new THREE.Mesh(new THREE.BoxGeometry(0.016,0.09,2*G.w(0,k0+0.05)*0.94),act); ic.position.copy(CW(-0.01,k0+0.045,zc)); catGroup.add(ic); }   // interceptor blade
+    for(const dz of [-0.62,0.62]){ const hb=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.11,0.34),act); hb.position.copy(CW(-0.045,k0+0.075,zc+dz)); catGroup.add(hb);   // actuator housings
+      const st=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.06,0.24),act); st.position.copy(CW(-0.1,k0+0.06,zc+dz)); catGroup.add(st); }
+    // five-blade propeller: broad, skewed, rounded blades on a tapered hub
+    const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.11,0.32,18),bronze); hub.rotation.z=Math.PI/2; hub.position.copy(CW(G.xp,G.hp,zc)); catGroup.add(hub);
+    { const R=G.rp, r0=0.08, bl=new THREE.Shape(), N=16, le=[], te=[];
+      for(let i=0;i<=N;i++){ const t=i/N, r=r0+t*(R-r0), c=0.12*Math.pow(Math.sin(Math.PI*(0.18+0.8*t)),0.55)*Math.sqrt(Math.max(0,1-Math.pow(t,6))), sk=0.07*t*t; le.push([sk+c,r]); te.push([sk-c,r]); }
+      bl.moveTo(te[0][0],te[0][1]); le.forEach(p=>bl.lineTo(p[0],p[1])); te.slice().reverse().forEach(p=>bl.lineTo(p[0],p[1]));
+      for(let k=0;k<5;k++){ const g=new THREE.ShapeGeometry(bl,4); g.rotateY(Math.PI/2+0.5); const m=new THREE.Mesh(g,bronze); m.rotation.x=k*2*Math.PI/5+0.3; m.position.copy(CW(G.xp,G.hp,zc)); catGroup.add(m); } }
+    const sd=new V3(1,0.12,0).normalize(), a=CW(G.xp+0.15,G.hp,zc), bpt=CW(8.6*G.L/26,G.hp+0.12*(8.6*G.L/26-G.xp),zc), sh=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,a.distanceTo(bpt),10),steel);
     sh.position.copy(a.clone().lerp(bpt,0.5)); sh.quaternion.setFromUnitVectors(new V3(0,1,0),bpt.clone().sub(a).normalize()); catGroup.add(sh);
-    const br=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.32,0.04),steel); br.position.copy(CW(3.1,0.12,zc)); catGroup.add(br);
-    const rud=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.58,0.1),new THREE.MeshStandardMaterial({color:'#5d2a22',roughness:0.7})); rud.position.copy(CW(0.6,-0.21,zc)); catGroup.add(rud);
-    const ic=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.12,2*G.bc(0)*0.8),steel); ic.position.copy(CW(0.02,0.18,zc)); catGroup.add(ic);
+    // A-bracket: a barrel round the shaft just forward of the propeller, two streamlined legs splayed up to palms on the flat run
+    { const xBr=G.xp+0.55, hBr=G.hp+0.12*0.55, bar=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.075,0.32,14),steel); bar.position.copy(CW(xBr,hBr,zc)); bar.quaternion.setFromUnitVectors(new V3(0,1,0),sd); catGroup.add(bar);
+      for(const dz of [-0.3,0.3]){ const top=CW(xBr+0.08,G.hk(xBr+0.08),zc+dz), bot=CW(xBr,hBr+0.04,zc), L2=top.distanceTo(bot), g=new THREE.CylinderGeometry(0.028,0.028,L2,10); g.scale(1.7,1,1);
+        const leg=new THREE.Mesh(g,steel); leg.position.copy(top.clone().lerp(bot,0.5)); leg.quaternion.setFromUnitVectors(new V3(0,1,0),top.clone().sub(bot).normalize()); catGroup.add(leg);
+        const palm=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.02,0.1),steel); palm.position.copy(top); catGroup.add(palm); } }
+    // rudder: fabricated flat plate with horizontal stiffeners, edge bars, a round stock boss at the top and zinc anodes
+    { const kR=G.hk(G.xr)+0.02, H=kR+0.03, rm=M('#9c9a80',{roughness:0.7}), zinc=M('#c9ccc9',{metalness:0.4});
+      const add=(g,x,h,z,m)=>{ const o=new THREE.Mesh(g,m); o.position.copy(CW(x,h,z)); catGroup.add(o); return o; };
+      add(new THREE.BoxGeometry(0.48,H,0.03),G.xr,kR-H/2,zc,rm);
+      for(const f of [0.27,0.52,0.77]) add(new THREE.BoxGeometry(0.46,0.025,0.075),G.xr,kR-H*f,zc,rm);
+      for(const dx of [-0.235,0.235]) add(new THREE.BoxGeometry(0.03,H,0.06),G.xr+dx,kR-H/2,zc,rm);
+      add(new THREE.CylinderGeometry(0.065,0.065,0.1,16),G.xr+0.16,kR-0.05,zc,rm);
+      for(const sz of [-1,1]){ const an=add(new THREE.CylinderGeometry(0.05,0.05,0.02,16),G.xr+0.05,kR-H*0.38,zc+sz*0.03,zinc); an.rotation.x=Math.PI/2; } }
+    // sacrificial anode bar on the hull bottom forward of the propeller
+    { const xa=G.xp+1.7, an=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.03,0.09),M('#b9bcb8',{metalness:0.4})); an.position.copy(CW(xa,G.hk(xa)-0.016,zc+s*0.3)); catGroup.add(an); }
+    // draught marks near the stern on the outer side: metric figures 10 cm high every 20 cm, the bottom of each figure at its draught
+    { const xm=0.75, ink=(txt)=>{ const cv=document.createElement('canvas'); cv.width=256; cv.height=128; const c2=cv.getContext('2d'); c2.fillStyle='#111'; c2.font='700 112px Inter, Arial'; c2.textBaseline='bottom';
+        c2.textAlign='center'; c2.fillText(txt,128,124); const w=Math.min(250,c2.measureText(txt).width+8); return {tex:new THREE.CanvasTexture(cv),w:w/128}; };
+      for(let d=Math.ceil((G.hk(xm)+0.05)/0.2)*0.2; d<=Math.min(G.Dc-0.3,G.T+0.6)+1e-6; d+=0.2){ const dd=Math.round(d*10)/10, whole=Math.abs(dd-Math.round(dd))<1e-6;
+        const {tex}=ink(whole?`${Math.round(dd)}M`:`${Math.round(dd*10)%10}`), pl=new THREE.Mesh(new THREE.PlaneGeometry(0.2,0.1),new THREE.MeshStandardMaterial({map:tex,transparent:true,depthWrite:false,roughness:0.6,polygonOffset:true,polygonOffsetFactor:-2}));
+        pl.position.copy(CW(xm,dd+0.05,s*(G.c+G.w(xm,dd+0.05,1)+0.004))); pl.rotation.y=s>0?0:Math.PI; pl.renderOrder=4; catGroup.add(pl); } }
     const wl=new THREE.LineLoop(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xe8fbff,transparent:true,opacity:0.9})); wl.userData.s=s; catGroup.add(wl); catWL.push(wl); }
   // cross-structure (wet deck to main deck) and main deck
-  const xCS=G.L*0.84, wIn=G.c-G.b;
-  const cs=new THREE.Mesh(new THREE.BoxGeometry(xCS,G.Dc-G.hw-0.04,2*wIn+0.2),new THREE.MeshStandardMaterial({color:'#1e4fae',roughness:0.7})); cs.position.copy(CW(xCS/2,(G.hw+G.Dc-0.04)/2,0)); catGroup.add(cs);
-  const dp=[], di=[], n=60; for(let i=0;i<=n;i++){ const x=Math.min(G.L,G.xEnd(G.Dc))*i/n, e=G.c+G.w(x,G.Dc); dp.push(...CW(x,G.Dc,e).toArray(),...CW(x,G.Dc,-e).toArray()); if(i<n){ const a=2*i; di.push(a,a+1,a+2,a+1,a+3,a+2); } }
+  const xCS=G.xEnd(G.hw)-0.02, wIn=G.c-G.b;                                          // the wet deck runs right forward to the bow
+  { const x0=2.45*G.L/26, zi=x=>G.c-G.w(x,G.hw,-1)+0.03, sh=new THREE.Shape(), n=40;      // between the hulls' inner sides, from frame 1 (as the GA)
+    sh.moveTo(x0,-zi(x0)); for(let i=1;i<=n;i++){ const x=x0+(xCS-x0)*i/n; sh.lineTo(x,-zi(x)); } for(let i=n;i>=0;i--){ const x=x0+(xCS-x0)*i/n; sh.lineTo(x,zi(x)); }
+    const g=new THREE.ExtrudeGeometry(sh,{depth:G.Dc-G.hw-0.04,bevelEnabled:false}); g.rotateX(-Math.PI/2); g.translate(-G.L/2,G.hw,0);
+    catGroup.add(new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:'#1e4fae',roughness:0.7,side:THREE.DoubleSide}))); }
+  const dp=[], di=[], n=80; for(let i=0;i<=n;i++){ const x=G.L*i/n, h=G.Dt(x), e=G.c+G.w(x,h); dp.push(...CW(x,h,e).toArray(),...CW(x,h,-e).toArray()); if(i<n){ const a=2*i; di.push(a,a+1,a+2,a+1,a+3,a+2); } }   // deck rises with the sheer
+  { const fp=[], fi=[], m=16; for(let j=0;j<=m;j++){ const h=G.hw+(G.Db-G.hw)*j/m, x=G.xEnd(h)-0.01; fp.push(...CW(x,h,G.c).toArray(),...CW(x,h,-G.c).toArray()); if(j<m){ const a=2*j; fi.push(a,a+1,a+2,a+1,a+3,a+2); } }
+    const fg=new THREE.BufferGeometry(); fg.setAttribute('position',new THREE.Float32BufferAttribute(fp,3)); fg.setAttribute('color',new THREE.Float32BufferAttribute(new Array(fp.length).fill(1),3)); fg.setIndex(fi); fg.computeVertexNormals();
+    catGroup.add(new THREE.Mesh(fg,catHulls[0].material));                                // raked front face between the bows, painted like the hull (yellow fascia band on top)
+    const am=new THREE.MeshStandardMaterial({color:'#5c6166',metalness:0.6,roughness:0.45}), ha=G.Dc-0.15, xa=G.xEnd(ha)+0.03;   // anchor stowed at the centre of the face
+    const sk=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.42,0.06),am); sk.position.copy(CW(xa,ha,0)); catGroup.add(sk);
+    const cr=new THREE.Mesh(new THREE.TorusGeometry(0.15,0.025,6,14,Math.PI),am); cr.rotation.set(0,Math.PI/2,Math.PI); cr.position.copy(CW(xa,ha-0.12,0)); catGroup.add(cr); }
   const dg=new THREE.BufferGeometry(); dg.setAttribute('position',new THREE.Float32BufferAttribute(dp,3)); dg.setIndex(di); dg.computeVertexNormals();
   catGroup.add(new THREE.Mesh(dg,new THREE.MeshStandardMaterial({color:'#b7a487',roughness:0.85,side:THREE.DoubleSide})));
   // superstructure scaled from Ocean Tracker's side profile (photo): a main cabin running almost the full length with a raked
@@ -3308,7 +3437,7 @@ function catBuild(){ const G=HULL.G; if(catGroup){ scene.remove(catGroup); catGr
     const m=new THREE.Mesh(g,mat); m.material.side=THREE.DoubleSide; catGroup.add(m); return m; };
   const lerp=(x,xa,ya,xb,yb)=>ya+(yb-ya)*clamp((x-xa)/(xb-xa),0,1);
   const Wd=2*(G.c+G.b), W1=Wd-0.5, W2=W1-0.3, rake=0.83, h1=D+2.4, h2=D+3.5, h3=D+4.45;
-  const fx=h=>X(24.4)-rake*(h-D);                                                  // raked front of the main cabin
+  const fx=h=>X(21.5)-rake*(h-D);                                                  // raked front of the main cabin, at frame 18 (GA)
   const frontTop=(x,hb0,xf)=>hb0+(xf-x)/rake;                                     // height of the raked front above a base at x
   panel(X(4.5),fx(D),x=>D,x=>Math.min(h1,frontTop(x,D,fx(D))),W1/2,0.25,white);                                          // main cabin
   panel(X(4.9),fx(D+0.85)-0.25,x=>D+0.85,x=>Math.min(D+1.95,frontTop(x,D+0.85,fx(D+0.85)-0.25)),W1/2+0.02,0.23,glass);    // window band
@@ -3336,6 +3465,22 @@ function catBuild(){ const G=HULL.G; if(catGroup){ scene.remove(catGroup); catGr
     seg(CW(X(17.2),h2+1.0,zz*(Math.min(W2/2,deckHalf(X(17.2))-0.4))),CW(X(21.4),h2+1.0,zz*(Math.min(W2/2,deckHalf(X(21.4))-0.4)))); }
   seg(CW(X(21.4),h2+1.0,Math.min(W2/2,deckHalf(X(21.4))-0.4)),CW(X(21.4),h2+1.0,-Math.min(W2/2,deckHalf(X(21.4))-0.4)));
   catGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(rail),new THREE.LineBasicMaterial({color:'#c9d1d8'})));
+  // foredeck (from the GA main deck plan and the aerial photo): rails round the deck edge, a white stair housing on the centreline
+  // with a dark opening forward, yellow-treaded stairs either side climbing aft to the upper deck, and bench seats
+  { const dk=x=>G.Dt(x), edge=x=>G.c+G.w(x,dk(x))-0.06, xA=X(21.6), xF=L-0.35, fr=[], fs=(p,q)=>fr.push(p,q), nR=24;
+    for(const zz of [1,-1]) for(let i=0;i<nR;i++){ const xa=xA+(xF-xA)*i/nR, xb=xA+(xF-xA)*(i+1)/nR;
+      fs(CW(xa,dk(xa)+1.0,zz*edge(xa)),CW(xb,dk(xb)+1.0,zz*edge(xb))); if(i%3===0) fs(CW(xa,dk(xa),zz*edge(xa)),CW(xa,dk(xa)+1.0,zz*edge(xa))); }
+    fs(CW(xF,dk(xF)+1.0,edge(xF)),CW(xF,dk(xF)+1.0,-edge(xF)));
+    catGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(fr),new THREE.LineBasicMaterial({color:'#c9d1d8'})));
+    const xH=X(22.9), hb=dk(xH), hs=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.1,1.5),white); hs.position.copy(CW(xH,hb+0.55,0)); catGroup.add(hs);
+    const op=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.75,0.9),glass); op.position.copy(CW(xH+0.76,hb+0.5,0)); catGroup.add(op);
+    for(const zz of [1,-1]){ const x0=X(24.3), x1=X(22.0), h0=dk(x0), z=zz*1.2, nS=12;                         // stairs: foredeck up to the upper deck
+      for(let i=0;i<nS;i++){ const t=(i+0.5)/nS, tr=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.04,0.62),yel); tr.position.copy(CW(x0+(x1-x0)*t,h0+(h1-h0)*t,z)); catGroup.add(tr); }
+      for(const dz of [-0.33,0.33]){ const a=CW(x0,h0,z+dz), b=CW(x1,h1,z+dz), sg=new THREE.Mesh(new THREE.BoxGeometry(0.04,a.distanceTo(b),0.04),white);
+        sg.position.copy(a.clone().lerp(b,0.5)); sg.quaternion.setFromUnitVectors(new V3(0,1,0),b.clone().sub(a).normalize()); catGroup.add(sg);
+        catGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([CW(x0,h0+0.9,z+dz),CW(x1,h1+0.9,z+dz)]),new THREE.LineBasicMaterial({color:'#c9d1d8'}))); } }
+    const seat=new THREE.MeshStandardMaterial({color:'#cfd3d6',roughness:0.5});
+    for(const [xb,zb,ry] of [[24.4,1.95,0.35],[24.4,-1.95,-0.35],[25.1,1.0,0.2],[25.1,-1.0,-0.2]]){ const xs=X(xb), bn=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.45,1.15),seat); bn.position.copy(CW(xs,dk(xs)+0.23,zb)); bn.rotation.y=ry; catGroup.add(bn); } }
   // lettering: vessel name on each hull near the bow; the operator's web address on the upper band for Ocean Tracker
   const label=(text,font,w,h,xN,hN,zOf,col)=>{ const cv=document.createElement('canvas'); cv.width=2048; cv.height=192; const c2=cv.getContext('2d'); c2.fillStyle=col; c2.font=font; c2.textAlign='center'; c2.textBaseline='middle'; c2.fillText(text,1024,100,2000);
     const tex=new THREE.CanvasTexture(cv); for(const ss of [1,-1]){ const pl=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false}));
@@ -3350,8 +3495,7 @@ function catBuild(){ const G=HULL.G; if(catGroup){ scene.remove(catGroup); catGr
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),depthTest:false})); sp.scale.set(1.6,0.6,1); sp.position.copy(CW(xd,G.Dc+1.9,ds.s*(e-0.6))); sp.renderOrder=20; catDpGroup.add(sp); }
   catPaint($('tCz').checked); catWaterline(draught); }
 function catWaterline(T){ const G=HULL.G; for(const wl of catWL){ const s=wl.userData.s, a=[], b=[];
-    for(let i=0;i<=80;i++){ const x=Math.min(G.xEnd(T),G.L)*i/80; if(G.hc(x)>T){ const w=G.w(x,T); a.push(CW(x,T+0.02,s*G.c+s*(w+0.04))); b.push(CW(x,T+0.02,s*G.c-s*(w+0.04))); continue; }
-      const w=G.w(x,T)+0.04; a.push(CW(x,T+0.02,s*G.c+s*w)); b.push(CW(x,T+0.02,s*G.c-s*w)); }
+    for(let i=0;i<=80;i++){ const x=Math.min(G.xEnd(T),G.L)*i/80, wo=G.w(x,T,1)+0.04, wi=G.w(x,T,-1)+0.04; a.push(CW(x,T+0.02,s*G.c+s*wo)); b.push(CW(x,T+0.02,s*G.c-s*wi)); }
     wl.geometry.dispose(); wl.geometry=new THREE.BufferGeometry().setFromPoints(a.concat(b.reverse())); } }
 // zones for the cleaning plan
 // zones as marked on the Ocean Tracker hull scan, each hull from the bow: bow (purple), midships (yellow), aft waterline band
@@ -3364,12 +3508,12 @@ const CAT_ZONES=[
   ['K:PST','Port hull, stern and transom','Port stern','DS4',-1,{x:[0,0.15],u:[[0,1]],transom:true},'#ef8a80',0],
   ['K:SN','Starboard niche: propeller, shaft, bracket, rudder','Stbd niche','DS2',1,{niche:true},'#c86dd7',0],
   ['K:PN','Port niche: propeller, shaft, bracket, rudder','Port niche','DS4',-1,{niche:true},'#dca3e6',0],
-  ['K:SWL','Starboard hull, aft waterline band','Stbd aft WL','DS2',1,{x:[0.15,0.5],u:[[0,0.12],[0.88,1]]},'#2ecc40',1],
-  ['K:PWL','Port hull, aft waterline band','Port aft WL','DS4',-1,{x:[0.15,0.5],u:[[0,0.12],[0.88,1]]},'#86e08f',1],
+  ['K:SWL','Starboard hull, aft waterline band','Stbd aft WL','DS2',1,{x:[0.15,0.5],band:0.4},'#2ecc40',1],
+  ['K:PWL','Port hull, aft waterline band','Port aft WL','DS4',-1,{x:[0.15,0.5],band:0.4},'#86e08f',1],
   ['K:SMD','Starboard hull, midships','Stbd mid','DS1',1,{x:[0.5,0.73],u:[[0,1]]},'#f1c40f',1],
   ['K:PMD','Port hull, midships','Port mid','DS3',-1,{x:[0.5,0.73],u:[[0,1]]},'#f6dc6b',1],
-  ['K:SAL','Starboard hull, aft below the waterline band','Stbd aft lower','DS2',1,{x:[0.15,0.5],u:[[0.12,0.88]]},'#5b8db8',2],
-  ['K:PAL','Port hull, aft below the waterline band','Port aft lower','DS4',-1,{x:[0.15,0.5],u:[[0.12,0.88]]},'#9ab8d4',2]];
+  ['K:SAL','Starboard hull, aft below the waterline band','Stbd aft lower','DS2',1,{x:[0.15,0.5],below:0.4},'#5b8db8',2],
+  ['K:PAL','Port hull, aft below the waterline band','Port aft lower','DS4',-1,{x:[0.15,0.5],below:0.4},'#9ab8d4',2]];
 for(const [k,name,short,ds,side,spec,col,pri] of CAT_ZONES) SIMZ[k]={name,short,ds,kind:'cat',side,sub:spec.niche?'niche':'girth',spec,col,pri};
 const TANKER_ORDER=SIM_ORDER.slice(), CAT_ORDER=CAT_ZONES.map(z=>z[0]);
 let TANKER_ZONE_HTML=null, CAT_SAVED=null;
@@ -3455,7 +3599,8 @@ async function lookupIMO(){
 $('vLookup').addEventListener('click',lookupIMO);
 $('vCancel').addEventListener('click',()=>$('vesselDlg').close());
 $('vReset').addEventListener('click',()=>{ exitCat(); applyVessel(Object.assign({},STANDARD)); $('vesselDlg').close(); });
-$('vesselForm').addEventListener('submit',e=>{ e.preventDefault(); const n=id=>parseFloat($(id).value), msg=$('vMsg');
+// Apply is a plain button, not a form submit: the published page runs in a sandboxed frame that blocks form submission
+function applyVesselForm(e){ if(e&&e.preventDefault) e.preventDefault(); const n=id=>parseFloat($(id).value), msg=$('vMsg');
   if($('vType').value==='cat'){ const P={name:($('vName').value.trim()||'CATAMARAN').toUpperCase(), loa:n('cLoa'), lwl:n('cLwl'), beam:n('cBeam'), hullB:n('cHullB'), spacing:n('cSpace'), depth:n('cDepth'), draught:n('cDraft')};
     const bad=!(P.loa>=8&&P.lwl>=0.7*P.loa&&P.lwl<=P.loa&&P.hullB>=0.6&&P.spacing>P.hullB&&Math.abs(P.spacing+P.hullB-P.beam)<=0.6&&P.depth>P.draught+0.4&&P.draught>=0.3);
     if(bad){ msg.className='vmsg err'; msg.textContent='Check the catamaran figures: waterline length within the overall length, hull spacing plus one hull width about equal to the beam, and depth well above the draught.'; return; }
@@ -3465,7 +3610,10 @@ $('vesselForm').addEventListener('submit',e=>{ e.preventDefault(); const n=id=>p
   if(!(loa>=20&&loa<=400)||!(beam>=4&&beam<=70)||!(dft>=1&&dft<=25)){ msg.className='vmsg err'; msg.textContent='Check the numbers: length 20 to 400 m, beam 4 to 70 m, draught 1 to 25 m.'; return; }
   const imo=$('vImo').value.trim();
   applyVessel({name:$('vName').value.trim(), imo:imoValid(imo)?imo:'', loa, beam, draught:dft, berth:$('vBerth').value.trim(), side:+$('vSide').value, standard:false});
-  $('vesselDlg').close(); });
+  $('vesselDlg').close(); }
+$('vApply').addEventListener('click',applyVesselForm);
+$('vesselForm').addEventListener('submit',applyVesselForm);
+$('vesselForm').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.tagName==='INPUT'&&e.target.type!=='checkbox'){ e.preventDefault(); applyVesselForm(); } });   // Enter applies too
 
 /* ---- clean track calculator controls ---- */
 document.querySelectorAll('#simZones i[data-z]').forEach(i=>{ i.style.background=zoneColor(i.dataset.z); });
