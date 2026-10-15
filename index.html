@@ -587,7 +587,6 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
       <p class="vnote small">The whole model stretches to fit, so deck fittings and markings scale with it. People, the H6.3 robot and the tether stay at true scale. Distances in the cards and the frame numbers refer to the 183 m standard model.</p>
       </div>
       <div id="vCatF" hidden>
-        <div class="vrow"><button type="button" id="vCat078">Fill in Ocean Tracker (Incat Hull 078, 24 m)</button></div>
         <div class="vgrid">
           <label>Length overall (m)<input id="cLoa" type="number" step="0.01" min="8" max="120"></label>
           <label>Waterline length (m)<input id="cLwl" type="number" step="0.01" min="7" max="115"></label>
@@ -597,7 +596,6 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
           <label>Depth, moulded (m)<input id="cDepth" type="number" step="0.01" min="1" max="15"></label>
           <label>Draught to the hull (m)<input id="cDraft" type="number" step="0.01" min="0.3" max="8"></label>
         </div>
-        <p class="vnote small">Two symmetric hard-chine hulls with a V bottom, built from these particulars. The wetted surface is measured from the two hulls, so it reflects a catamaran rather than one wide hull. Hull 078's figures come from its specification sheet and general arrangement.</p>
       </div>
       <fieldset class="venv"><legend>Conditions</legend>
         <div class="venv-row">
@@ -2149,7 +2147,7 @@ function syncRibbons(r,n){ if(!r.ribG) return; const vis=SLIME.on; const m0=HULL
 // a track point's place in the hull mesh's surface coordinates, and how many map pixels a metre round the hull is there
 function catMapPt(r,pr){ const G=HULL.G, x=pr.x, C=G.hc(x), top=G.Dt(x); let sig, dsm;
   if(pr.face==='out'){ sig=0.3*(top-pr.q)/Math.max(0.05,top-C); dsm=0.3/Math.max(0.05,top-C); }
-  else if(pr.face==='bot'){ sig=0.3+0.4*pr.q; dsm=0.4/Math.max(0.05,(Math.hypot(G.bc(x,1),C-G.hk(x))+Math.hypot(G.bc(x,-1),C-G.hk(x)))); }
+  else if(pr.face==='bot'){ sig=0.3+0.4*pr.q; dsm=0.4/Math.max(0.05,(secArc(G,x,1,C)+secArc(G,x,-1,C))); }
   else { sig=0.7+0.3*(pr.q-C)/Math.max(0.05,G.hw-C); dsm=0.3/Math.max(0.05,G.hw-C); }
   return {u:clamp(x/G.L,0,1)*1024, v:((r.cfg.side>0?0:0.5)+0.5*clamp(sig,0,1))*512, pxm:0.5*512*dsm}; }
 function drawCleanMap(segs){ const M=CLEANMAP, ctx=M.ctx, on=SLIME.on;
@@ -3164,7 +3162,7 @@ buildCrew();
    V bottom, a raked stem and rising forefoot, a cross-structure with the wet deck above the water, two cabin decks,
    and in each hull a 5-blade propeller on an inclined shaft and bracket, a rudder and transom interceptors.
    Ship frame for the catamaran: x from the transom forward, h above the keel, z to starboard.               */
-const CAT078={name:'OCEAN TRACKER', loa:26.49, lwl:25.0, beam:7.6, hullB:2.3, spacing:5.3, depth:2.75, draught:1.16};
+const CAT078={name:'Ocean Tracker', loa:26.49, lwl:25.0, beam:7.6, hullB:2.3, spacing:5.3, depth:2.75, draught:1.16};
 function catGeo(P){
   // lines taken off the One2Three general arrangement (Incat Hull 078): keel line from the centreline profile, plan shape from
   // the below-decks plan, stem and sheer from the profile view; scaled to the vessel's own length and draught
@@ -3174,26 +3172,49 @@ function catGeo(P){
   // keel height above its lowest point (about 13 m from the transom), as a fair line fitted to the GA's centreline profile:
   // a flat run aft at 0.6 m to about 5 m, a short rounded knuckle, then a steady curve down to the lowest point, and a steady
   // rise forward into the forefoot (0.62 m at 24.4 m) - no waves between the measured points
-  const xF0=5.0*kL, xLow=13.0*kL, xK1=24.4*kL, kAft=0.6*kT, hF=0.62*kT, fil=0.3*kL, hw=Math.min(Dc-0.5,T+0.8), xT=0.5*L, xKr=xLow;
-  const hk=x=>{ if(x<=xF0) return kAft; if(x<xLow){ const u=x-xF0, ue=u<fil?u*u/(2*fil):u-fil/2, t=clamp(ue/(xLow-xF0-fil/2),0,1); return kAft*Math.pow(1-t,2.5); }
-    if(x>=xK1) return hF; return hF*Math.pow((x-xLow)/(xK1-xLow),2.5); };
-  const stemX=h=>h>=T?lwl+(h-T)*(L-lwl)/Math.max(0.1,Db-T):xK1+(lwl-xK1)*Math.sqrt(clamp((h-hF)/Math.max(0.05,T-hF),0,1));   // raked stem; rounded forefoot below the waterline
-  const xEnd=h=>{ if(h>=hF) return stemX(h); let lo=xKr, hi=xK1; for(let k=0;k<24;k++){ const m=(lo+hi)/2; if(hk(m)<h) lo=m; else hi=m; } return lo; };   // where the forefoot rises past h
+  const xF0=5.0*kL, xLow=13.0*kL, xK1=24.4*kL, kAft=0.6*kT, hF=0.62*kT, fil=0.3*kL, hw=Math.max(T+0.8,Dc-0.33), xT=0.5*L, xKr=xLow;
+  // aft the keel tapers up from the main hull in an even, eased rise (from about 11.5 m to 4.5 m) and then runs flat to the transom
+  const xR0=4.5*kL, xR1=11.5*kL;
+  const hk0=x=>{ if(x<=xR0) return kAft; if(x<xLow){ return x>=xR1?0:kAft*sm((xR1-x)/(xR1-xR0)); }
+    return hF*Math.pow(Math.min(1,(x-xLow)/(xK1-xLow)),2.5); };
+  const hk=x=>x<=xS?hk0(x):(x>=L?Db:bzAt(0,x)[1]);                                       // forward of 23 m the keel follows the stem curve
+  // the stem as one smooth curve (as in the dry-dock and slipway photos): it leaves the keel at about 23 m, rounds the forefoot and
+  // runs up the raked bow (22 degrees) to the top of the stem, through about 25.1 m at the waterline (GA 25.0 to 25.2)
+  const xS=Math.min(23.0*kL,xK1), hS=hk0(xS), slS=(hk0(xS+0.01)-hk0(xS-0.01))/0.02, aS=2.2*kL, bS=2.9*(Db-T)/2.12, psi=26*Math.PI/180, nS=Math.hypot(1,slS);
+  const BZ=[[xS,hS],[xS+aS/nS,hS+aS*slS/nS],[L-bS*Math.sin(psi),Db-bS*Math.cos(psi)],[L,Db]];
+  const bz=t=>{ const u=1-t; return [u*u*u*BZ[0][0]+3*u*u*t*BZ[1][0]+3*u*t*t*BZ[2][0]+t*t*t*BZ[3][0], u*u*u*BZ[0][1]+3*u*u*t*BZ[1][1]+3*u*t*t*BZ[2][1]+t*t*t*BZ[3][1]]; };
+  const bzAt=(k,v)=>{ let lo=0, hi=1; for(let i=0;i<30;i++){ const m=(lo+hi)/2; if(bz(m)[k]<v) lo=m; else hi=m; } return bz((lo+hi)/2); };
+  const stemX=h=>h>=Db?L:bzAt(1,h)[0];
+  const xEnd=h=>{ if(h>=hS) return stemX(h); let lo=xKr, hi=xS; for(let k=0;k<24;k++){ const m=(lo+hi)/2; if(hk(m)<h) lo=m; else hi=m; } return lo; };   // where the keel or stem rises past h
   const Dt=x=>Dc+sh*Math.pow(sm((x-0.72*L)/(0.28*L)),1.4);                              // sheer rising to the bow
   // plan shape: the outer side runs straight to about 81% of the length then curves in hard to the bow; the inner (tunnel) side
   // starts drawing in at about half the length and tapers gradually
-  const f=(x,h,side)=>{ const e=xEnd(h); if(x>=e) return 0;
-    if(side<0){ const xs=Math.min(0.5*L,e*0.8); if(x<=xs) return 1; const t=(x-xs)/(e-xs); return Math.min(Math.sqrt(Math.max(0,1-Math.pow(t,2.3))),3.8*(1-t)); }   // sharp at the stem
-    const xs=Math.min(0.81*L,e*0.85); if(x<=xs) return 1; const t=(x-xs)/(e-xs); return Math.max(0,1-Math.pow(t,1.2)); };
-  const aftF=x=>1-sm((x-5.0*kL)/(1.2*kL));                                               // 1 on the flat run aft, 0 forward of the knuckle
-  const hc=x=>hk(x)+(0.42+0.38*clamp((x-xT)/(L-xT),0,1))*kT*(1-0.95*aftF(x));          // chine: deadrise steepening forward, flat on the run aft
-  const w=(x,h,side)=>{ side=side||1; const k=hk(x), C=hc(x); if(h<k) return 0; const b0=b*f(x,h,side);
-    return h<=C?b0*(h-k)/Math.max(1e-3,C-k):b0*(1+0.03*(h-C)/Math.max(0.1,Dc-C)); };
-  const bc=(x,side)=>b*f(x,hc(x),side||1);
-  const pt=(face,x,q,s)=>{ if(face==='bot'){ const u=1-2*q, C=hc(x), k=hk(x), h=k+(C-k)*Math.abs(u); x=Math.min(x,xEnd(h)); return [x,h,s*c+s*u*bc(x,u>=0?1:-1)]; }
+  // plan shape: the hulls are symmetric (spec), each side running straight to about 62% of the length then drawing in to a sharp stem
+  const f=(x,h,side)=>{ const e=xEnd(h); if(x>=e) return 0; const xs=Math.min(0.62*L,e*0.8); if(x<=xs) return 1; const t=(x-xs)/(e-xs);
+    return Math.min(Math.pow(Math.max(0,1-t*t),0.7),3.2*(1-t)); };
+  const aftF=x=>1-sm((x-4.5*kL)/(7.0*kL));                                            // the bottom flattens over the same stretch as the keel rises                                               // 1 on the flat run aft, 0 forward of the knuckle
+  // turn of the bilge / chine: deeper forward, flat bottom on the run aft; forward of midships the chine runs level, straight aft from
+  // the stem at about 1.0 m (as in the dry-dock photos) instead of climbing with the keel, fading into the round bilge towards midships
+  const smin=(a,b2,r)=>-r*Math.log(Math.exp(-a/r)+Math.exp(-b2/r)), smax=(a,b2,r)=>-smin(-a,-b2,r), Cl=1.0*kT;
+  const hc=x=>{ const k=hk(x), base=k+(0.6+0.2*clamp((x-xT)/(L-xT),0,1))*kT*(1-0.95*aftF(x)); if(x<=xT) return base;
+    return smax(k+0.02,smin(base,Cl,0.04),0.02); };
+  // sections are round-bilged (GA typical section): below the turn of the bilge (C) the half-section is a quarter ellipse from the keel,
+  // flat at the keel, vertical where it meets the side; on the flat run aft, where C is only just above the keel, it becomes a flat bottom
+  // section shape: hard chine (spec) fitted to the GA typical section - a convex V bottom from the keel up to a crisp chine (about 0.6 m
+  // up amidships, where the hull is about 74% of its full width), then sides flaring out to full width at the deck. Aft on the flat run
+  // it becomes a flat-bottomed box with vertical sides; forward the bottom straightens into a sharp V under the level chine.
+  // the sides are one continuous surface along the hull: at any height they're the same width from the stern to the start of the bow
+  // taper (a constant beam, as the GA plan and spec), flaring from about 74% of full width at the chine height to full width at the deck
+  const Cm=0.6*kT, beta=x=>sm((x-0.5*L)/(0.3*L)), qBx=x=>1.3-0.3*beta(x);
+  const Wf=(x,h)=>{ const fl=0.74+0.08*beta(x), t=clamp((h-Cm)/Math.max(0.1,Dc-Cm),0,1); return fl+(1-fl)*(1-Math.pow(1-t,2.5)); };
+  const w=(x,h,side)=>{ side=side||1; const k=hk(x); if(h<k) return 0; const C=hc(x), b0=b*f(x,h,side);
+    if(h<=C) return b0*Wf(x,C)*Math.pow(Math.max(0,(h-k)/Math.max(1e-3,C-k)),1/qBx(x));       // convex bottom out to the chine
+    return b0*Wf(x,h); };
+  const bc=(x,side)=>w(x,hc(x),side||1);
+  const pt=(face,x,q,s)=>{ if(face==='bot'){ const u=1-2*q, C=hc(x), k=hk(x), h=k+(C-k)*Math.abs(u); x=Math.min(x,xEnd(h)); return [x,h,s*c+s*Math.sign(u)*w(x,h,u>=0?1:-1)]; }
     x=Math.min(x,xEnd(q)); return [x,q,s*c+s*(face==='out'?1:-1)*w(x,q,face==='out'?1:-1)]; };
-  return {P,L,plat,c,b,Dc,Db,Dt,T,lwl,xT,xKr,xK1,hF,hw,stemX,hk,xEnd,f,hc,w,bc,pt,
-    xp:2.5*kL, hp:0.0, rp:0.38*kT, xr:1.7*kL};                                         // propeller centre and radius, rudder position (from the GA)
+  return {P,L,plat,c,b,Dc,Db,Dt,T,lwl,xT,xKr,xK1:xS,hF:hS,hw,stemX,hk,xEnd,f,hc,w,bc,pt,
+    xp:2.5*kL, hp:Math.max(-0.4,-(1.68*kT-T-0.38*kT)), rp:0.38*kT, xr:1.7*kL};                                         // propeller centre and radius, rudder position (from the GA)
 }
 const CW=(x,h,z)=>new V3(x-HULL.G.L/2,h,z);
 const catX=ds=>(ds.x0+ds.x1)/2-X0+HULL.G.L/2;                                          // deployment point frame on the catamaran
@@ -3206,7 +3227,7 @@ function catSurf(face,x,q,s,off){ const G=HULL.G, e=0.03, dq=face==='bot'?0.01:0
 function catContact(pts){ const G=HULL.G, flags=new Uint8Array(pts.length), clr=0.05;
   for(let i=1;i<pts.length-1;i++){ const p=pts[i], x=p.x+G.L/2, h=p.y, z=p.z; if(h>G.Dc||x<0||x>G.L) continue;
     for(const s of [1,-1]){ const zc=s*G.c, dz=z-zc, k=G.hk(x); if(h<k-0.002) continue; const sd=dz*s>=0?1:-1, W=G.w(x,Math.max(h,0),sd); if(Math.abs(dz)>=W+clr) continue;
-      flags[i]=1; const C=G.hc(x), bcx=G.bc(x,sd), hv=bcx>1e-3?k+(C-k)*Math.min(1,Math.abs(dz)/bcx):k;
+      flags[i]=1; const C=G.hc(x), bcx=G.bc(x,sd); let lo=k, hi=C; for(let it=0;it<12;it++){ const m=(lo+hi)/2; if(G.w(x,m,sd)<Math.abs(dz)) lo=m; else hi=m; } const hv=(lo+hi)/2;   // the bottom under the point
       const dSide=W+clr-Math.abs(dz), dBot=h<=C?h-hv+clr:1e9;
       if(dBot<dSide) p.y=hv-clr; else p.z=zc+(Math.abs(dz)<1e-6?s:Math.sign(dz))*(W+clr); break; } }
   return flags; }
@@ -3216,21 +3237,22 @@ function catWSA(G){ const cache={};
     for(let x=dx/2;x<G.L;x+=dx){ const k=G.hk(x); if(T<=k) continue; const C=G.hc(x);
       for(const sd of [1,-1]){ const bcx=G.bc(x,sd);                                       // outer and inner halves of the section
         if(T>=C){ const hm=(C+T)/2, dw=(G.w(x+dx,hm,sd)-G.w(Math.max(0,x-dx),hm,sd))/(2*dx), sl=Math.sqrt(1+dw*dw);
-          A+=(Math.hypot(bcx,C-k)+(T-C)*sl)*dx; }
-        else { const fr=(T-k)/(C-k); A+=Math.hypot(bcx*fr,T-k)*dx; } } }
+          A+=(secArc(G,x,sd,C)+(T-C)*sl)*dx; }                                              // round the bottom to the chine, then up the side
+        else A+=secArc(G,x,sd,T)*dx; } }
     let tr=0; for(let h=0.005;h<T;h+=0.01) tr+=(G.w(0,h,1)+G.w(0,h,-1))*0.01;
     return cache[key]=2*(A+tr); };
   return {at, rate:T=>(at(T+0.05)-at(Math.max(0.05,T-0.05)))/0.1}; }
 // deployment points: forward and aft, each side, at the deck edge (ship x as the shared code expects)
 function catDPs(G){ const out=[];
-  for(const [key,s,xc] of [['DS1',1,G.L*0.66],['DS2',1,1.6],['DS3',-1,G.L*0.66],['DS4',-1,1.6]]){
-    const e=G.c+G.w(xc,G.Dc), x0=X0-G.L/2+xc;
+  // DS1 and DS3 are at the bow railing on the foredeck; DS2 and DS4 at the aft deck
+  for(const [key,s,xc] of [['DS1',1,G.L*0.9],['DS2',1,1.6],['DS3',-1,G.L*0.9],['DS4',-1,1.6]]){
+    const e=G.c+G.w(xc,G.Dt(xc)), x0=X0-G.L/2+xc;
     out.push({key,s,x0:x0-0.6,x1:x0+0.6,z0:s*(e-1.1),z1:s*(e-0.1),kind:'deploy',name:'Deployment point '+key.slice(2)}); }
   return out; }
 let CAT_DS=[];
-function catTetherFixed(run,dsKey){ const G=HULL.G, ds=dsOf(dsKey||run.dsKey||run.cfg.ds), s=ds.s, xd=catX(ds), e=G.c+G.w(xd,G.Dc), path=[];
-  path.push(CW(xd-0.4,G.Dc+0.15,s*(e-0.6))); path.railIdx=1; if(!dsKey) run.railIdx=1;
-  path.push(CW(xd,G.Dc+1.0,s*e), CW(xd,G.Dc+0.9,s*(e+0.35))); return path; }
+function catTetherFixed(run,dsKey){ const G=HULL.G, ds=dsOf(dsKey||run.dsKey||run.cfg.ds), s=ds.s, xd=catX(ds), dk=G.Dt(xd), e=G.c+G.w(xd,dk), path=[];
+  path.push(CW(xd-0.4,dk+0.15,s*(e-0.6))); path.railIdx=1; if(!dsKey) run.railIdx=1;
+  path.push(CW(xd,dk+1.0,s*e), CW(xd,dk+0.9,s*(e+0.35))); return path; }
 // route a camera-guided robot follows from the start reference: down the outer side at the deployment frame,
 // round the V bottom (and up the tunnel side) to the target girth or depth, then along the hull at that level
 function catRoute(ds,top,entry,face,q,xt){ const G=HULL.G, s=ds.s, xd=clamp(catX(ds),0.4,G.L-1.5), C=G.hc(xd), pts=[top.clone(),entry.clone()], nrm=[new V3(0,0,s),new V3(0,0,s)];
@@ -3242,12 +3264,13 @@ function catRoute(ds,top,entry,face,q,xt){ const G=HULL.G, s=ds.s, xd=clamp(catX
   const n=Math.max(1,Math.ceil(Math.abs(xt-xd)/0.3)); for(let i=1;i<=n;i++) add(face,xd+(xt-xd)*i/n,q);
   const cum=new Float64Array(pts.length); for(let i=1;i<pts.length;i++) cum[i]=cum[i-1]+pts[i].distanceTo(pts[i-1]);
   return {pts,nrm,cum,len:cum[cum.length-1]}; }
-function catTopEntry(ds){ const G=HULL.G, s=ds.s, xd=catX(ds), e=G.c+G.w(xd,G.Dc), top=CW(xd,G.Dc+0.9,s*(e+0.35)), entry=top.clone(); entry.y=Math.min(top.y,draught); return {top,entry}; }
+function catTopEntry(ds){ const G=HULL.G, s=ds.s, xd=catX(ds), dk=G.Dt(xd), e=G.c+G.w(xd,dk), top=CW(xd,dk+0.9,s*(e+0.35)), entry=top.clone(); entry.y=Math.min(top.y,draught); return {top,entry}; }
 // cleaning tracks for a catamaran zone: lanes along the hull at constant depth (sides) or constant girth (V bottom)
 // girth round one hull below the waterline at frame x: outer waterline, down the outer side, round the V, up the tunnel side
-function catGirthParts(G,x){ const T=draught, C=G.hc(x), k=G.hk(x), hyp=(Math.hypot(G.bc(x,1),C-k)+Math.hypot(G.bc(x,-1),C-k))/2;
-  if(T<=k) return null; if(T>=C) return {a:T-C,bh:hyp,vmin:0,vmax:1,C,T};
-  const fr=(T-k)/(C-k); return {a:0,bh:hyp*fr,vmin:0.5-fr/2,vmax:0.5+fr/2,C,T}; }
+function secArc(G,x,side,h1){ const k=G.hk(x); if(h1<=k) return 0; let L=0, pw=0, ph=k; const n=18; for(let i=1;i<=n;i++){ const h=k+(h1-k)*i/n, ww=G.w(x,h,side); L+=Math.hypot(ww-pw,h-ph); pw=ww; ph=h; } return L; }
+function catGirthParts(G,x){ const T=draught, C=G.hc(x), k=G.hk(x); if(T<=k) return null;
+  const hT=Math.min(T,C), fr=clamp((hT-k)/Math.max(1e-6,C-k),0,1), bh=(secArc(G,x,1,hT)+secArc(G,x,-1,hT))/2;
+  return T>=C?{a:T-C,bh,vmin:0,vmax:1,C,T}:{a:0,bh,vmin:0.5-fr/2,vmax:0.5+fr/2,C,T}; }
 const catGirth=(G,x)=>{ const g=catGirthParts(G,x); return g?2*g.a+2*g.bh:0; };
 function catGirthPt(G,x,u){ const g=catGirthParts(G,x); if(!g) return null; const tot=2*g.a+2*g.bh, d=clamp(u,0,1)*tot;    // u: 0 outer waterline .. 1 tunnel-side waterline
   if(d<=g.a) return {face:'out',q:g.T-d}; if(d<=g.a+2*g.bh) return {face:'bot',q:g.vmin+(d-g.a)/Math.max(1e-6,2*g.bh)*(g.vmax-g.vmin)};
@@ -3257,6 +3280,23 @@ function catUAt(G,x,face,q){ const g=catGirthParts(G,x); if(!g) return null; con
 function catURanges(spec,G,x){ if(spec.band==null&&spec.below==null) return spec.u;
   const t=catGirth(G,x); if(t<=0) return []; const B=spec.band!=null?spec.band:spec.below, f=Math.min(0.5,B/t);
   return spec.band!=null?[[0,f],[1-f,1]]:(f<0.5?[[f,1-f]]:[]); }
+// fittings under each hull the robots must keep clear of: the A-bracket legs, the rudder and its stock, the anode bar, and the shaft
+// where it runs too close under the hull for the robot before entering it. Boxes in (x along the hull, z across from its centre, + outboard)
+function catKeepOut(G){ const xBr=G.xp+0.55, xa=G.xp+1.7, sh=x=>G.hp+0.12*(x-G.xp); let xs0=null, xs1=null;
+  for(let x=xBr+0.3;x<G.L*0.6;x+=0.05){ const gap=G.hk(x)-sh(x); if(xs0==null&&gap<0.3) xs0=x; if(gap<=0){ xs1=x; break; } }
+  const B=[{x0:xBr-0.05,x1:xBr+0.2,z0:-0.36,z1:0.36}, {x0:G.xr-0.25,x1:G.xr+0.25,z0:-0.07,z1:0.07}, {x0:xa-0.23,x1:xa+0.23,z0:0.25,z1:0.35}];
+  if(xs0!=null) B.push({x0:xs0,x1:xs1!=null?xs1:xs0+1,z0:-0.06,z1:0.06}); return B; }
+// steer a hull-bottom lane point round the keep-out boxes: the robot swings out beside each fitting (allowing for its half-width and a
+// margin) and back, easing in over about half a metre either side
+function catAvoid(G,x,g){ if(g.face!=='bot') return null; const k=G.hk(x), C=G.hc(x), u=1-2*g.q, sd=u>=0?1:-1, h=k+(C-k)*Math.abs(u);
+  const zr=sd*G.w(x,h,sd), rw=0.30, rl=0.32, ramp=0.6; let zt=zr, wMax=0;                // robot half-width 0.19 m plus about 0.11 m clearance
+  for(const b of (G._ko||(G._ko=catKeepOut(G)))){ const zlo=b.z0-rw, zhi=b.z1+rw; if(zr<=zlo||zr>=zhi) continue;
+    const dx=Math.max(b.x0-rl-x,x-(b.x1+rl),0); if(dx>=ramp) continue; const wgt=dx<=0?1:0.5*(1+Math.cos(Math.PI*dx/ramp));
+    if(wgt>wMax){ const tgt=zr>=(b.z0+b.z1)/2?zhi:zlo; wMax=wgt; zt=zr+(tgt-zr)*wgt; } }
+  if(wMax===0) return null;
+  const sd2=zt>=0?1:-1, want=Math.min(Math.abs(zt),G.bc(x,sd2)*0.98); let lo=0, hi=1;
+  for(let i=0;i<16;i++){ const m=(lo+hi)/2; if(G.w(x,k+(C-k)*m,sd2)<want) lo=m; else hi=m; }
+  return {face:'bot',q:(1-sd2*(lo+hi)/2)/2}; }
 function catTrack(cfg,lane){ const G=HULL.G, s=cfg.side, ds=dsOf(cfg.ds), xd=catX(ds), {top,entry}=catTopEntry(ds), pts=[], nrm=[], par=[];
   if(cfg.sub==='niche') return catNicheTrack(cfg,lane,ds,top,entry);
   const sp=cfg.spec, x0=Math.max(0.2,sp.x[0]*G.L), x1=Math.min(G.L-0.1,sp.x[1]*G.L), tot=catGirth(G,(x0+x1)/2)||catGirth(G,x0);
@@ -3277,7 +3317,8 @@ function catTrack(cfg,lane){ const G=HULL.G, s=cfg.side, ds=dsOf(cfg.ds), xd=cat
   r0.pts.forEach((p,i)=>{ pts.push(p); nrm.push(r0.nrm[i]); par.push(null); });
   const transitN=pts.length; let lanes=0;
   us.forEach((u,i)=>{ const [xa,xb]=sps[i]; if(xa===null||xb-xa<0.4) return; const a=dir?xa:xb, b=dir?xb:xa, n=Math.max(1,Math.ceil(Math.abs(b-a)/0.25));
-    for(let k=0;k<=n;k++){ const x=a+(b-a)*k/n, uu=u(x); if(uu==null) continue; const g=catGirthPt(G,x,uu); if(!g) continue; const r=catSurf(g.face,x,g.q,s,0.03); pts.push(r.p); nrm.push(r.n); par.push({face:g.face,q:g.q,x}); }
+    for(let k=0;k<=n;k++){ const x=a+(b-a)*k/n, uu=u(x); if(uu==null) continue; let g=catGirthPt(G,x,uu); if(!g) continue; g=catAvoid(G,x,g)||g;   // round the fittings
+      const r=catSurf(g.face,x,g.q,s,0.03); pts.push(r.p); nrm.push(r.n); par.push({face:g.face,q:g.q,x}); }
     dir=!dir; lanes++; });
   return {pts,nrm,lanes,transitN,par,area:catZoneArea(sp)}; }
 const zoneArea=r=>r.area!=null?r.area:r.cleanLen*SIM.lane;     // catamaran zones use their measured surface; tanker zones their track
@@ -3298,8 +3339,13 @@ function catNicheTrack(cfg,lane,ds,top,entry){ const G=HULL.G, s=cfg.side, zc=s*
   for(const [fx,nx] of [[G.xp-0.1,-1],[G.xp+0.1,1]]){ const n=new V3(nx,0,0);
     for(let k=0;k<5;k++){ const th=k*2*Math.PI/5+0.3;
       for(let j=0;j<2;j++){ for(let i=0;i<=6;i++){ const r=j?0.36-0.24*i/6:0.12+0.24*i/6, o=(j?0.06:-0.06); push(fx,G.hp+r*Math.cos(th)-o*Math.sin(th),zc+r*Math.sin(th)+o*Math.cos(th),n); } lanes++; } } }
-  // shaft and bracket: a pass along the shaft
-  for(let i=0;i<=10;i++){ const x=G.xp+0.3+5.8*i/10; push(x,G.hp+0.06+0.07*(x-G.xp),zc+0.09,new V3(0,0,s)); }
+  // shaft: a pass along it either side of the A-bracket - never through the bracket's barrel or legs: between the two parts the robot
+  // swings well outboard of the legs - up to where the shaft runs too close under the hull for the robot
+  { const xBr=G.xp+0.55, sh=x=>G.hp+0.12*(x-G.xp), n=new V3(0,0,s); let xIn=G.xp+6;
+    for(let x=xBr+0.3;x<G.L*0.6;x+=0.05){ if(G.hk(x)-sh(x)<0.3){ xIn=x; break; } }
+    for(let i=0;i<=5;i++){ const x=G.xp+0.3+(xBr-0.35-G.xp-0.3)*i/5; push(x,sh(x),zc+s*0.13,n); } lanes++;
+    push(xBr-0.2,sh(xBr)-0.05,zc+s*0.6,n); push(xBr+0.25,sh(xBr)-0.05,zc+s*0.6,n);                   // round the A-bracket legs
+    for(let i=0;i<=8;i++){ const x=xBr+0.4+(xIn-0.1-xBr-0.4)*i/8; push(x,sh(x),zc+s*0.13,n); } lanes++; }
   return {pts,nrm,lanes,transitN,par,area:catZoneArea({niche:true})}; }
 function catDistTable(r,fixed){ const ds=dsOf(r.dsKey||r.cfg.ds), {top,entry}=catTopEntry(ds), s0=r.cum[Math.max(0,r.transitN-1)], dist=[];
   const back=[], drop=top.y-entry.y;
@@ -3317,16 +3363,16 @@ function catTravelPose(r,sT,u){ const ds=dsOf(r.dsKey||r.cfg.ds), {top,entry}=ca
   const rt=r._rt[key], ps=routePose(rt,u); ps.route=rt; return ps; }
 // ---- the 3D model ----
 const CAT_ZONE_COL={SBW:'#8e44ad',PBW:'#b07cc6',SST:'#e74c3c',PST:'#ef8a80',SWL:'#2ecc40',PWL:'#86e08f',SMD:'#f1c40f',PMD:'#f6dc6b',SAL:'#5b8db8',PAL:'#9ab8d4'};
-const CAT_PAINT={af:new THREE.Color('#7d8a92'),boot:new THREE.Color('#dde2e5'),top:new THREE.Color('#1e4fae'),strake:new THREE.Color('#3a3f45'),yel:new THREE.Color('#f2c200')};
+const CAT_PAINT={af:new THREE.Color('#c9c7bd'),boot:new THREE.Color('#f3f4f2'),top:new THREE.Color('#1e4fae'),strake:new THREE.Color('#3a3f45'),yel:new THREE.Color('#f2c200')};
 // the catamaran's paint lines (antifouling, waterline band, fender line, topsides) worked out per pixel from height and position,
 // so they're crisp and straight rather than following the mesh's vertices; with Cleaning zones on, the zone colours show below
-const CAT_PAINT_SH={u:{uCatZones:{value:0},uCatHL:{value:12},uCDc:{value:2.75},uCSh:{value:0.53},uCYel:{value:CAT_PAINT.yel},uCAF:{value:CAT_PAINT.af},uCBoot:{value:CAT_PAINT.boot},uCTop:{value:CAT_PAINT.top},uCStrake:{value:CAT_PAINT.strake}},
-  decl:'uniform float uCatZones; uniform float uCatHL; uniform float uCDc; uniform float uCSh; uniform vec3 uCYel; uniform vec3 uCAF; uniform vec3 uCBoot; uniform vec3 uCTop; uniform vec3 uCStrake;\n',
+const CAT_PAINT_SH={u:{uCatZones:{value:0},uPWL:{value:1.16},uCatHL:{value:12},uCDc:{value:2.75},uCSh:{value:0.53},uCYel:{value:CAT_PAINT.yel},uCAF:{value:CAT_PAINT.af},uCBoot:{value:CAT_PAINT.boot},uCTop:{value:CAT_PAINT.top},uCStrake:{value:CAT_PAINT.strake}},
+  decl:'uniform float uCatZones; uniform float uPWL; uniform float uCatHL; uniform float uCDc; uniform float uCSh; uniform vec3 uCYel; uniform vec3 uCAF; uniform vec3 uCBoot; uniform vec3 uCTop; uniform vec3 uCStrake;\n',
   glsl:'  { float ph=vSlimeW.y, px=vSlimeW.x+uCatHL, xf=px/(2.0*uCatHL); bool st=vSlimeW.z>0.0;\n'+
        '    if(uCatZones>0.5&&ph<uWL){ vec3 zc = xf>=0.73 ? (st?uZBs:uZBp) : (xf>=0.5 ? (st?uZMs:uZMp) : (xf>=0.15 ? (ph>uWL-uZBand ? (st?uZWs:uZWp) : (st?uZLs:uZLp)) : (st?uZSs:uZSp)));\n'+
        '      diffuseColor.rgb = zc; }\n'+
        '    else { float tS=clamp((xf-0.72)/0.28,0.0,1.0), dtop=uCDc+uCSh*pow(tS*tS*(3.0-2.0*tS),1.4);\n'+
-       '      diffuseColor.rgb = ph<uWL-0.1 ? uCAF : (ph<uWL+0.22 ? uCBoot : ((xf>0.7&&ph>dtop-0.3) ? uCYel : ((ph>uCDc-0.14&&px<0.83*2.0*uCatHL) ? uCStrake : uCTop))); } }\n'};
+       '      diffuseColor.rgb = ph<uPWL+0.36 ? uCAF : (ph<uPWL+0.40 ? uCBoot : ((xf>0.7&&ph>dtop-0.3) ? uCYel : uCTop)); } }\n'};   // paint lines fixed at the design waterline
 // zone colours for the per-pixel zones view (bow, midships, aft waterline band, aft lower, stern; starboard and port)
 { const zc=k=>({value:new THREE.Color(CAT_ZONE_COL[k])}); const C=CAT_PAINT_SH;
   Object.assign(C.u,{uZBand:{value:0.4},uZBs:zc('SBW'),uZBp:zc('PBW'),uZMs:zc('SMD'),uZMp:zc('PMD'),uZWs:zc('SWL'),uZWp:zc('PWL'),uZLs:zc('SAL'),uZLp:zc('PAL'),uZSs:zc('SST'),uZSp:zc('PST')});
@@ -3348,7 +3394,7 @@ function catPaint(zoneMode){ const G=HULL.G, T=draught; CAT_PAINT_SH.u.uCatZones
 function catBuild(){ const G=HULL.G; if(catGroup){ scene.remove(catGroup); catGroup.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); }
   catGroup=new THREE.Group(); catGroup.userData.world=true; scene.add(catGroup); catHulls=[]; catWL=[];
   const hullMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.65,metalness:0.05,side:THREE.DoubleSide}); slimeify(hullMat,CAT_PAINT_SH);
-  CAT_PAINT_SH.mask=true; CAT_PAINT_SH.u.uCatHL.value=G.L/2; CAT_PAINT_SH.u.uCDc.value=G.Dc; CAT_PAINT_SH.u.uCSh.value=G.Db-G.Dc;
+  CAT_PAINT_SH.mask=true; CAT_PAINT_SH.u.uPWL.value=G.T; CAT_PAINT_SH.u.uCatHL.value=G.L/2; CAT_PAINT_SH.u.uCDc.value=G.Dc; CAT_PAINT_SH.u.uCSh.value=G.Db-G.Dc;
   const NX=120, NS=96;
   for(const s of [1,-1]){ const pos=[], meta=[], idx=[];
     const cuv=[]; for(let i=0;i<=NX;i++){ const x=G.L*i/NX; for(let j=0;j<=NS;j++){ const q=catSecPt(G,s,x,j/NS); cuv.push(i/NX,(s>0?0:0.5)+0.5*j/NS); pos.push(...CW(...q.p).toArray()); meta.push({h:q.p[1],face:q.face,x:q.p[0],q:q.q}); } }
@@ -3394,21 +3440,47 @@ function catBuild(){ const G=HULL.G; if(catGroup){ scene.remove(catGroup); catGr
       for(const dx of [-0.235,0.235]) add(new THREE.BoxGeometry(0.03,H,0.06),G.xr+dx,kR-H/2,zc,rm);
       add(new THREE.CylinderGeometry(0.065,0.065,0.1,16),G.xr+0.16,kR-0.05,zc,rm);
       for(const sz of [-1,1]){ const an=add(new THREE.CylinderGeometry(0.05,0.05,0.02,16),G.xr+0.05,kR-H*0.38,zc+sz*0.03,zinc); an.rotation.x=Math.PI/2; } }
+    { const hR=G.Dc-0.1, pts=[], out=(8.10-7.60)/2; for(let x=0.25;x<=0.8*G.L;x+=0.5) pts.push(CW(x,hR,s*(G.c+G.w(x,hR,1)+out-0.11)));   // fendering: beam overall 8.10 m (spec)
+      const rs=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),80,0.11,12,false),M('#3a3f45',{roughness:0.7})); catGroup.add(rs); }
+    // spray rail (aerial and hull-model photos): a narrow flat lip on both sides of each hull, in a straight line at the top of the white
+    // antifouling where it meets the blue, from near the transom to the stem
+    for(const sd of [1,-1]){ const lp=[], li=[], n=140, hL=G.T+0.38, xE=G.xEnd(hL)-0.03;
+      for(let i=0;i<=n;i++){ const x=0.3+(xE-0.3)*i/n, ww=G.w(x,hL,sd), wl=0.05*Math.min(1,ww/0.3), z0=G.c+sd*ww, z1=G.c+sd*(ww+wl);
+        lp.push(...CW(x,hL,s*z0).toArray(),...CW(x,hL-0.004,s*z1).toArray()); if(i<n){ const a=2*i; li.push(a,a+1,a+2,a+1,a+3,a+2); } }
+      const lg=new THREE.BufferGeometry(); lg.setAttribute('position',new THREE.Float32BufferAttribute(lp,3)); lg.setAttribute('color',new THREE.Float32BufferAttribute(new Array(lp.length).fill(1),3)); lg.setIndex(li); lg.computeVertexNormals();
+      catGroup.add(new THREE.Mesh(lg,hullMat)); }
     // sacrificial anode bar on the hull bottom forward of the propeller
     { const xa=G.xp+1.7, an=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.03,0.09),M('#b9bcb8',{metalness:0.4})); an.position.copy(CW(xa,G.hk(xa)-0.016,zc+s*0.3)); catGroup.add(an); }
-    // draught marks near the stern on the outer side: metric figures 10 cm high every 20 cm, the bottom of each figure at its draught
-    { const xm=0.75, ink=(txt)=>{ const cv=document.createElement('canvas'); cv.width=256; cv.height=128; const c2=cv.getContext('2d'); c2.fillStyle='#111'; c2.font='700 112px Inter, Arial'; c2.textBaseline='bottom';
-        c2.textAlign='center'; c2.fillText(txt,128,124); const w=Math.min(250,c2.measureText(txt).width+8); return {tex:new THREE.CanvasTexture(cv),w:w/128}; };
-      for(let d=Math.ceil((G.hk(xm)+0.05)/0.2)*0.2; d<=Math.min(G.Dc-0.3,G.T+0.6)+1e-6; d+=0.2){ const dd=Math.round(d*10)/10, whole=Math.abs(dd-Math.round(dd))<1e-6;
-        const {tex}=ink(whole?`${Math.round(dd)}M`:`${Math.round(dd*10)%10}`), pl=new THREE.Mesh(new THREE.PlaneGeometry(0.2,0.1),new THREE.MeshStandardMaterial({map:tex,transparent:true,depthWrite:false,roughness:0.6,polygonOffset:true,polygonOffsetFactor:-2}));
-        pl.position.copy(CW(xm,dd+0.05,s*(G.c+G.w(xm,dd+0.05,1)+0.004))); pl.rotation.y=s>0?0:Math.PI; pl.renderOrder=4; catGroup.add(pl); } }
+    // draught marks on the outer side near the stern (1M, 2, 1M4) and near the stem (1M, 2, 4, 1M6), as on the vessel: metric figures
+    // 10 cm high every 20 cm with the bottom of each figure at its draught; the top mark repeats the metre (1M4, 1M6); white where they
+    // fall on the blue topsides, black on the antifouling; the bow marks follow the rake of the stem and the turn of the hull side
+    { const ink=(txt,col)=>{ const cv=document.createElement('canvas'), c0=cv.getContext('2d'); c0.font='700 112px Inter, Arial'; const cw=Math.ceil(c0.measureText(txt).width)+12;
+        cv.width=cw; cv.height=128; const c2=cv.getContext('2d'); c2.fillStyle=col; c2.font='700 112px Inter, Arial'; c2.textBaseline='bottom'; c2.textAlign='center'; c2.fillText(txt,cw/2,124);
+        return {tex:new THREE.CanvasTexture(cv), w:0.1*cw/128}; };                           // each figure keeps its proportions
+      const blueFrom=G.T+0.38, d0=Math.max(0.2,Math.round((G.T-0.16)/0.2)*0.2);
+      const scale=(xOf,top)=>{ const marks=[]; for(let d=d0; d<=top+1e-6; d+=0.2) marks.push(Math.round(d*10)/10);
+        marks.forEach((dd,k)=>{ const m=Math.floor(dd+1e-6), dec=Math.round((dd-m)*10), whole=dec===0, last=k===marks.length-1;
+          const txt=whole?`${m}M`:(last?`${m}M${dec}`:`${dec}`), hc=dd+0.05, x=xOf(hc), zo=(xx,hh)=>G.c+G.w(xx,hh,1);
+          const nrm=new V3(-(zo(x+0.05,hc)-zo(x-0.05,hc))/0.1,-(zo(x,hc+0.02)-zo(x,hc-0.02))/0.04,1).normalize();   // the surface's own facing
+          const fig=ink(txt,dd>=blueFrom?'#f4f6f8':'#111'), pl=new THREE.Mesh(new THREE.PlaneGeometry(fig.w,0.1),new THREE.MeshStandardMaterial({map:fig.tex,transparent:true,depthWrite:false,roughness:0.6,polygonOffset:true,polygonOffsetFactor:-2}));
+          const wn=new V3(nrm.x,nrm.y,s*nrm.z); let pos=CW(x,hc,s*zo(x,hc));
+          catGroup.updateMatrixWorld(true); const hit=new THREE.Raycaster(pos.clone().addScaledVector(wn,0.5),wn.clone().negate(),0,1.0).intersectObjects(catHulls,false)[0];   // onto the rendered hull itself
+          if(hit) pos=hit.point.clone(); pos.addScaledVector(wn,0.005); pl.position.copy(pos); pl.up.set(0,1,0); pl.lookAt(pos.clone().add(wn));
+          pl.renderOrder=4; catGroup.add(pl); }); };
+      scale(()=>0.75,G.T+0.25);                                                             // stern
+      scale(()=>G.stemX(d0+0.05)-0.8,G.T+0.45); }                                           // bow: stacked straight up, just aft of the stem
     const wl=new THREE.LineLoop(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xe8fbff,transparent:true,opacity:0.9})); wl.userData.s=s; catGroup.add(wl); catWL.push(wl); }
   // cross-structure (wet deck to main deck) and main deck
   const xCS=G.xEnd(G.hw)-0.02, wIn=G.c-G.b;                                          // the wet deck runs right forward to the bow
   { const x0=2.45*G.L/26, zi=x=>G.c-G.w(x,G.hw,-1)+0.03, sh=new THREE.Shape(), n=40;      // between the hulls' inner sides, from frame 1 (as the GA)
     sh.moveTo(x0,-zi(x0)); for(let i=1;i<=n;i++){ const x=x0+(xCS-x0)*i/n; sh.lineTo(x,-zi(x)); } for(let i=n;i>=0;i--){ const x=x0+(xCS-x0)*i/n; sh.lineTo(x,zi(x)); }
     const g=new THREE.ExtrudeGeometry(sh,{depth:G.Dc-G.hw-0.04,bevelEnabled:false}); g.rotateX(-Math.PI/2); g.translate(-G.L/2,G.hw,0);
-    catGroup.add(new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:'#1e4fae',roughness:0.7,side:THREE.DoubleSide}))); }
+    catGroup.add(new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:'#1e4fae',roughness:0.7,side:THREE.DoubleSide})));
+    // haunches (GA typical section): a 45-degree chamfer where each hull's inner side meets the wet deck, along the tunnel
+    for(const s of [1,-1]){ const hp=[], hi=[], nH=60, dH=0.3; for(let i=0;i<=nH;i++){ const x=x0+(xCS-x0)*i/nH, zIn=G.c-G.w(x,G.hw-dH,-1);
+        hp.push(...CW(x,G.hw-dH,s*zIn).toArray(),...CW(x,G.hw+0.005,s*(zIn-dH*1.5)).toArray()); if(i<nH){ const a=2*i; hi.push(a,a+1,a+2,a+1,a+3,a+2); } }
+      const hg=new THREE.BufferGeometry(); hg.setAttribute('position',new THREE.Float32BufferAttribute(hp,3)); hg.setAttribute('color',new THREE.Float32BufferAttribute(new Array(hp.length).fill(1),3)); hg.setIndex(hi); hg.computeVertexNormals();
+      catGroup.add(new THREE.Mesh(hg,catHulls[0].material)); } }
   const dp=[], di=[], n=80; for(let i=0;i<=n;i++){ const x=G.L*i/n, h=G.Dt(x), e=G.c+G.w(x,h); dp.push(...CW(x,h,e).toArray(),...CW(x,h,-e).toArray()); if(i<n){ const a=2*i; di.push(a,a+1,a+2,a+1,a+3,a+2); } }   // deck rises with the sheer
   { const fp=[], fi=[], m=16; for(let j=0;j<=m;j++){ const h=G.hw+(G.Db-G.hw)*j/m, x=G.xEnd(h)-0.01; fp.push(...CW(x,h,G.c).toArray(),...CW(x,h,-G.c).toArray()); if(j<m){ const a=2*j; fi.push(a,a+1,a+2,a+1,a+3,a+2); } }
     const fg=new THREE.BufferGeometry(); fg.setAttribute('position',new THREE.Float32BufferAttribute(fp,3)); fg.setAttribute('color',new THREE.Float32BufferAttribute(new Array(fp.length).fill(1),3)); fg.setIndex(fi); fg.computeVertexNormals();
@@ -3449,7 +3521,13 @@ function catBuild(){ const G=HULL.G; if(catGroup){ scene.remove(catGroup); catGr
   panel(X(0.9),X(2.9),x=>x<X(1.3)?lerp(x,X(0.9),h2-0.31,X(1.3),h1+0.55):lerp(x,X(1.3),h1+0.55,X(2.9),h1+0.25),x=>lerp(x,X(0.9),h2-0.3,X(2.9),h2-0.03),W2/2+0.05,0.35,blu);
   // wheelhouse and upper cabin: raked windscreen, glazed sides, flat roof
   panel(X(3.9),X(17.2),x=>h2,x=>Math.min(h3,h2+(X(17.2)-x)/0.7*(h3-h2)),W2/2-0.05,0.45,glass);
-  panel(X(3.6),X(17.0),x=>h3,x=>h3+0.15,W2/2+0.1,0.3,white);
+  // roof (aerial photo): straight aft edge with rounded corners, parallel sides, and a broad rounded front sweeping over the wheelhouse
+  { const xa=X(3.6), xf=X(17.6), Rf=3.0*k, Wr=Math.min(W2/2+0.1,deckHalf(X(12))-0.3), rc=0.5, xb=xf-Rf, sh=new THREE.Shape();
+    sh.moveTo(xa,-Wr+rc); sh.quadraticCurveTo(xa,-Wr,xa+rc,-Wr); sh.lineTo(xb,-Wr);
+    for(let i=1;i<=24;i++){ const a=-Math.PI/2+Math.PI*i/24; sh.lineTo(xb+Rf*Math.cos(a),Wr*Math.sin(a)); }                // rounded front
+    sh.lineTo(xa+rc,Wr); sh.quadraticCurveTo(xa,Wr,xa,Wr-rc); sh.closePath();
+    const rg=new THREE.ExtrudeGeometry(sh,{depth:0.12,bevelEnabled:true,bevelThickness:0.02,bevelSize:0.03,bevelSegments:2,curveSegments:12});
+    rg.rotateX(Math.PI/2); rg.translate(-L/2,h3+0.13,0); catGroup.add(new THREE.Mesh(rg,white)); }
   // mast with radar, liferaft canisters and buoyant apparatus on the roof
   const mast=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,3.4,8),white); mast.position.copy(CW(X(12.9),h3+0.15+1.7,0)); catGroup.add(mast);
   const rad=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.2,20),white); rad.position.copy(CW(X(12.9),h3+2.4,0)); catGroup.add(rad);
@@ -3461,9 +3539,7 @@ function catBuild(){ const G=HULL.G; if(catGroup){ scene.remove(catGroup); catGr
   for(const zz of [1,-1]){ const pf=new THREE.Mesh(new THREE.BoxGeometry(G.plat+0.4,0.12,2*G.b),tan); pf.position.copy(CW(-G.plat/2+0.2,G.T+0.55,zz*G.c)); catGroup.add(pf); }
   // rails: aft main deck, upper foredeck, aft upper deck
   const rail=[]; const seg=(p,q)=>{ rail.push(p,q); };
-  for(const zz of [1,-1]){ for(let i=0;i<16;i++){ const xa=X(4.5)*i/16, xb=X(4.5)*(i+1)/16; seg(CW(xa,D+1.0,zz*(deckHalf(xa)-0.05)),CW(xb,D+1.0,zz*(deckHalf(xb)-0.05))); }
-    seg(CW(X(17.2),h2+1.0,zz*(Math.min(W2/2,deckHalf(X(17.2))-0.4))),CW(X(21.4),h2+1.0,zz*(Math.min(W2/2,deckHalf(X(21.4))-0.4)))); }
-  seg(CW(X(21.4),h2+1.0,Math.min(W2/2,deckHalf(X(21.4))-0.4)),CW(X(21.4),h2+1.0,-Math.min(W2/2,deckHalf(X(21.4))-0.4)));
+  for(const zz of [1,-1]){ for(let i=0;i<16;i++){ const xa=X(4.5)*i/16, xb=X(4.5)*(i+1)/16; seg(CW(xa,D+1.0,zz*(deckHalf(xa)-0.05)),CW(xb,D+1.0,zz*(deckHalf(xb)-0.05))); } }
   catGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(rail),new THREE.LineBasicMaterial({color:'#c9d1d8'})));
   // foredeck (from the GA main deck plan and the aerial photo): rails round the deck edge, a white stair housing on the centreline
   // with a dark opening forward, yellow-treaded stairs either side climbing aft to the upper deck, and bench seats
@@ -3489,10 +3565,10 @@ function catBuild(){ const G=HULL.G; if(catGroup){ scene.remove(catGroup); catGr
   if(/OCEAN TRACKER/i.test(G.P.name||'')) label('MANLYFASTFERRY.COM.AU','600 150px Inter, Arial',7.0,0.66,X(9.9),D+3.0,(ss,x)=>Math.min(W2/2,deckHalf(x==null?X(9.9):x)-0.4)+0.03,'#1e4fae');
   // deployment points on deck
   catDpGroup=new THREE.Group(); catDpGroup.visible=$('tDz').checked; catGroup.add(catDpGroup);
-  for(const ds of CAT_DS){ const xd=catX(ds), e=G.c+G.w(xd,G.Dc), m=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.04,0.9),new THREE.MeshBasicMaterial({color:'#f2c230'}));
-    m.position.copy(CW(xd,G.Dc+0.03,ds.s*(e-0.6))); catDpGroup.add(m);
+  for(const ds of CAT_DS){ const xd=catX(ds), dk=G.Dt(xd), e=G.c+G.w(xd,dk), m=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.04,0.9),new THREE.MeshBasicMaterial({color:'#f2c230'}));
+    m.position.copy(CW(xd,dk+0.03,ds.s*(e-0.6))); catDpGroup.add(m);
     const cv=document.createElement('canvas'); cv.width=128; cv.height=48; const cx=cv.getContext('2d'); cx.fillStyle='rgba(17,17,17,0.85)'; cx.fillRect(0,0,128,48); cx.fillStyle='#fff'; cx.font='600 26px Inter, Arial'; cx.textAlign='center'; cx.textBaseline='middle'; cx.fillText('DP'+ds.key.slice(2),64,25);
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),depthTest:false})); sp.scale.set(1.6,0.6,1); sp.position.copy(CW(xd,G.Dc+1.9,ds.s*(e-0.6))); sp.renderOrder=20; catDpGroup.add(sp); }
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),depthTest:false})); sp.scale.set(1.6,0.6,1); sp.position.copy(CW(xd,dk+1.9,ds.s*(e-0.6))); sp.renderOrder=20; catDpGroup.add(sp); }
   catPaint($('tCz').checked); catWaterline(draught); }
 function catWaterline(T){ const G=HULL.G; for(const wl of catWL){ const s=wl.userData.s, a=[], b=[];
     for(let i=0;i<=80;i++){ const x=Math.min(G.xEnd(T),G.L)*i/80, wo=G.w(x,T,1)+0.04, wi=G.w(x,T,-1)+0.04; a.push(CW(x,T+0.02,s*G.c+s*wo)); b.push(CW(x,T+0.02,s*G.c-s*wi)); }
@@ -3571,14 +3647,15 @@ function applyVessel(v){
 }
 function vTypeShow(){ const cat=$('vType').value==='cat'; $('vMono').hidden=cat; $('vCatF').hidden=!cat; $('vImoRow').hidden=cat; $('vMsg').textContent=''; }
 function fillCat(P){ $('cLoa').value=P.loa; $('cLwl').value=P.lwl; $('cBeam').value=P.beam; $('cHullB').value=P.hullB; $('cSpace').value=P.spacing; $('cDepth').value=P.depth; $('cDraft').value=P.draught; }
-$('vType').addEventListener('change',vTypeShow);
+$('vType').addEventListener('change',()=>{ vTypeShow(); const nm=$('vName');                 // the multihull type brings up Ocean Tracker, name and particulars
+  if($('vType').value==='cat'){ nm.value=CAT078.name; fillCat(CAT078); }
+  else if(nm.value.trim().toUpperCase()===CAT078.name.toUpperCase()) nm.value=(!HULL.cat&&VESSEL&&VESSEL.name)||'LUDRICK'; });
 $('vLight').addEventListener('change',e=>setNight(e.target.value==='night'));
 $('vSb').addEventListener('change',e=>{ $('sbOn').checked=e.target.checked; updateSeabed(); });
 $('vSbD').addEventListener('input',e=>{ $('sbDepth').value=e.target.value; updateSeabed(); });
 $('vSbT').addEventListener('change',e=>{ $('sbType').value=e.target.value; updateSeabed(); });
 function setSlime(){ SLIME.on=$('vSlime').checked; SLIME.level=+$('vSlimeL').value; for(const r of SIM.runs) for(const m of r.ribbons||[]) m.visible=SLIME.on; if(SIM.tl) applyTimeline(true); }
 $('vSlime').addEventListener('change',setSlime); $('vSlimeL').addEventListener('change',setSlime);
-$('vCat078').addEventListener('click',()=>{ fillCat(CAT078); $('vName').value='OCEAN TRACKER'; });
 function openVessel(){ const v=VESSEL; $('vType').value=HULL.cat?'cat':'mono'; fillCat(HULL.P||CAT078); vTypeShow();
   $('vLight').value=NIGHT?'night':'day'; $('vSb').checked=$('sbOn').checked; $('vSbD').value=$('sbDepth').value; $('vSbT').value=$('sbType').value;
   $('vImo').value=v.imo||''; $('vName').value=v.name||''; $('vLoa').value=v.loa.toFixed(1); $('vBeam').value=v.beam.toFixed(1); $('vDraft').value=v.draught.toFixed(1);
@@ -3601,7 +3678,7 @@ $('vCancel').addEventListener('click',()=>$('vesselDlg').close());
 $('vReset').addEventListener('click',()=>{ exitCat(); applyVessel(Object.assign({},STANDARD)); $('vesselDlg').close(); });
 // Apply is a plain button, not a form submit: the published page runs in a sandboxed frame that blocks form submission
 function applyVesselForm(e){ if(e&&e.preventDefault) e.preventDefault(); const n=id=>parseFloat($(id).value), msg=$('vMsg');
-  if($('vType').value==='cat'){ const P={name:($('vName').value.trim()||'CATAMARAN').toUpperCase(), loa:n('cLoa'), lwl:n('cLwl'), beam:n('cBeam'), hullB:n('cHullB'), spacing:n('cSpace'), depth:n('cDepth'), draught:n('cDraft')};
+  if($('vType').value==='cat'){ const P={name:($('vName').value.trim()||'Catamaran'), loa:n('cLoa'), lwl:n('cLwl'), beam:n('cBeam'), hullB:n('cHullB'), spacing:n('cSpace'), depth:n('cDepth'), draught:n('cDraft')};
     const bad=!(P.loa>=8&&P.lwl>=0.7*P.loa&&P.lwl<=P.loa&&P.hullB>=0.6&&P.spacing>P.hullB&&Math.abs(P.spacing+P.hullB-P.beam)<=0.6&&P.depth>P.draught+0.4&&P.draught>=0.3);
     if(bad){ msg.className='vmsg err'; msg.textContent='Check the catamaran figures: waterline length within the overall length, hull spacing plus one hull width about equal to the beam, and depth well above the draught.'; return; }
     applyCat(P); $('vesselDlg').close(); return; }
@@ -3646,7 +3723,7 @@ requestAnimationFrame(loop);
 (function vesselFromLink(){ let q; try{ q=new URLSearchParams(location.search); }catch(e){ return; }
   const num=k=>parseFloat(q.get(k)), loa=num('loa'), beam=num('beam'), dft=num('draft')||num('draught');
   if((q.get('type')||'').toLowerCase().startsWith('cat')){ const d=CAT078, v=(k,x)=>isFinite(num(k))?num(k):x;
-    const P={name:((q.get('name')||'').trim()||'CATAMARAN').toUpperCase(), loa:v('loa',d.loa), lwl:v('lwl',Math.min(v('loa',d.loa),d.lwl*v('loa',d.loa)/d.loa)), beam:v('beam',d.beam),
+    const P={name:((q.get('name')||'').trim()||'Catamaran'), loa:v('loa',d.loa), lwl:v('lwl',Math.min(v('loa',d.loa),d.lwl*v('loa',d.loa)/d.loa)), beam:v('beam',d.beam),
       hullB:v('hullw',d.hullB), spacing:v('spacing',v('beam',d.beam)-v('hullw',d.hullB)), depth:v('depth',d.depth), draught:v('draft',v('draught',d.draught))};
     if(P.loa>=8&&P.lwl<=P.loa&&P.spacing>P.hullB&&P.depth>P.draught+0.4&&P.draught>=0.3) applyCat(P);
     return; }
