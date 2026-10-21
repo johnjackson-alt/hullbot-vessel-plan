@@ -105,6 +105,20 @@ button{font:inherit;color:inherit;}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none;}
 .views{position:absolute;top:14px;right:14px;display:flex;gap:4px;padding:3px;background:var(--surface);border-radius:8px;box-shadow:var(--shadow);z-index:3;}
 .view-in{padding:2px 0;}
+.scrub{position:absolute;bottom:14px;left:14px;right:14px;max-width:780px;margin:0 auto;display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:10px;box-shadow:var(--shadow);padding:6px 12px;z-index:3;font-size:12px;color:var(--ink);}
+.scrub button{flex:none;width:30px;height:30px;border-radius:50%;border:0;background:var(--ink);color:var(--surface);font-size:11px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0;}
+.scrub-bar{position:relative;flex:1;min-width:120px;height:22px;display:flex;align-items:center;}
+.scrub-wins{position:absolute;left:0;right:0;top:50%;height:8px;margin-top:-4px;border-radius:4px;background:var(--surface-2);overflow:hidden;pointer-events:none;}
+.scrub-wins i{position:absolute;top:0;bottom:0;background:rgba(59,130,246,.30);}
+.scrub-wins b{position:absolute;left:0;top:0;bottom:0;background:var(--ink);opacity:.55;}
+.scrub input[type=range]{-webkit-appearance:none;appearance:none;position:relative;width:100%;height:16px;margin:0;background:transparent;cursor:pointer;}
+.scrub input[type=range]::-webkit-slider-runnable-track{height:16px;background:transparent;}
+.scrub input[type=range]::-moz-range-track{height:16px;background:transparent;}
+.scrub input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--ink);border:2px solid var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.35);cursor:grab;}
+.scrub input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.35);cursor:grab;}
+.scrub-time{flex:none;white-space:nowrap;color:var(--ink-soft);font-variant-numeric:tabular-nums;}
+#stage.has-scrub .live{max-height:calc(100% - 100px);}
+@media (max-width:899px){ .scrub{left:10px;right:10px;bottom:10px;gap:8px;padding:6px 10px;} .scrub-time{font-size:11px;} #stage.has-scrub .live{max-height:30%;} }
 .dpsel{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;margin:0 0 8px;font-size:12px;}.dpsel>span{width:100%;font-weight:600;color:var(--ink-soft);}
 .dpsel label{display:flex;align-items:center;gap:4px;font-weight:600;}.dpsel em{font-style:normal;font-weight:400;color:var(--ink-soft);}.view-in select{flex:1;}
 .live{position:absolute;top:14px;right:14px;width:280px;max-height:calc(100% - 28px);overflow:auto;background:var(--surface);border-radius:10px;box-shadow:var(--shadow);padding:10px 12px 12px;font-size:12px;line-height:1.35;z-index:3;color:var(--ink);}
@@ -580,6 +594,11 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
 
   <main class="stage" id="stage">
     <div class="live" id="live" hidden></div>
+    <div class="scrub" id="scrub" hidden>
+      <button type="button" id="scrubPlay" aria-label="Play">▶</button>
+      <div class="scrub-bar"><div class="scrub-wins" id="scrubWins"></div><input type="range" id="scrubT" min="0" max="1000" step="1" value="0" aria-label="Simulation time: drag to any moment of the operation"></div>
+      <span class="scrub-time" id="scrubTime"></span>
+    </div>
     <div class="stage-title"><h1>Vessel Hull Planner</h1><p>LUDRICK, MR product tanker, 183 m by 32.2 m</p></div>
     <div class="demo-cap" id="demoCap" aria-live="polite"></div>
     <button type="button" class="demo-stop" id="demoStop" hidden>Stop demo</button>
@@ -2492,6 +2511,7 @@ function liveNext(T){ let best=null; (SIM.tl.bots||[]).forEach((segs,j)=>{ for(c
 function updateLive(){ const el=$('live'), on=$('simLive'); if(!el) return; const tl=SIM.tl, R=SIM.runs;
   const show=!!(on&&on.checked&&R.length&&tl&&(SIM.playing||SIM.T>0)); el.hidden=!show; if(!show) return;
   el.style.right=(!mq.matches&&card&&!card.hidden)?(card.offsetWidth+28)+'px':'';                     // beside the feature card when that's open
+  el.style.bottom=mq.matches?(overlayHeight()+62)+'px':'';                                              // on a phone, above the scrubber and the panel sheet
   const T=SIM.T, P=tl.P, pct=tl.total?Math.min(1,T/tl.total):0, tot=R.reduce((a,r)=>a+zoneArea(r),0), done=R.reduce((a,r)=>a+zoneArea(r)*(r.frac||0),0);
   let wi=0; (tl.wStart||[]).forEach((t0,i)=>{ if(T>=t0) wi=i; }); const wEnd=(tl.wStart[wi]||0)+((tl.windows[wi]||{}).onsite||0);
   const live=SIM.bots.filter(b=>b.state), cleaning=live.filter(b=>/^Cleaning/.test(b.state.status)).length, nx=liveNext(T), wy=water.position.y, ys=HULL.cat?1:VS.sy;
@@ -2514,13 +2534,26 @@ function updateLive(){ const el=$('live'), on=$('simLive'); if(!el) return; cons
         `<div class="m">${pw}${!P.powered&&bp!=null?`<span class="lv-batt"><em style="width:${(bp*100).toFixed(0)}%;background:${bc}"></em></span>${fmtH(bl)} battery · `:''}tether ${Math.round(b.tNow||0)} m${tq||((b.slack||0)>0.5?` (${Math.round(b.slack)} m slack)`:'')}${dep>0.05?` · ${dep.toFixed(1)} m deep`:''}</div></div>`; }).join('')+
     (nx&&!P.powered?`<div class="lv-next">Next ${P.pod?'recharge in the pod':'battery swap'}: R${nx.j+1} in ${fmtH(nx.t-T)}</div>`:'');
   const c=el.querySelector('[data-close]'); if(c) c.onclick=()=>{ on.checked=false; updateLive(); }; }
+// ---- the timeline scrubber along the bottom of the view: drag to any moment of the operation; the working windows are the bands
+let SCRUB_DRAG=false;
+function updateScrub(){ const el=$('scrub'); if(!el) return; const tl=SIM.tl, on=!!(SIM.runs.length&&tl&&tl.total>0&&!DEMO.on);
+  el.hidden=!on; stage.classList.toggle('has-scrub',on); if(!on) return;
+  if(!mq.matches){ el.style.left=(overlayLeft()+14)+'px'; el.style.right=(overlayRight()+14)+'px'; el.style.bottom=''; }   // clear of the panel and the card
+  else { el.style.left=''; el.style.right=''; el.style.bottom=(overlayHeight()+10)+'px'; }                         // on a phone, just above the panel sheet
+  const T=SIM.T, tot=tl.total, inp=$('scrubT'), wins=$('scrubWins'); if(!SCRUB_DRAG) inp.value=Math.round(T/tot*1000);
+  const key=tot.toFixed(4)+'|'+(tl.wStart||[]).map(t=>t.toFixed(4)).join(',');
+  if(wins.dataset.key!==key){ wins.dataset.key=key; wins.innerHTML=(tl.wStart||[]).map((t0,i)=>{ const w=((tl.windows[i]||{}).onsite||0); return `<i style="left:${(t0/tot*100).toFixed(2)}%;width:${(w/tot*100).toFixed(2)}%"></i>`; }).join('')+'<b></b>'; }
+  wins.querySelector('b').style.width=(T/tot*100).toFixed(2)+'%';
+  let wl='between windows'; (tl.wStart||[]).forEach((t0,i)=>{ if(T>=t0-1e-9&&T<=t0+((tl.windows[i]||{}).onsite||0)+1e-9) wl=`window ${i+1} of ${tl.windows.length}`; });
+  $('scrubTime').textContent=`${fmtH(T)} of ${fmtH(tot)}, ${wl}`;
+  const pb=$('scrubPlay'); pb.textContent=SIM.playing?'❚❚':'▶'; pb.setAttribute('aria-label',SIM.playing?'Pause':'Play'); }
 function updateSimUI(){
   updatePlan(); dpLabels();
   const st=$('simStat'), play=$('simPlay'), R=SIM.runs, tl=SIM.tl, zs=$('zoneSum');
   if(zs){ const area=R.reduce((a,r)=>a+zoneArea(r),0), km=R.reduce((a,r)=>a+r.cleanLen,0)/1000, ln=R.reduce((a,r)=>a+r.lanes,0);
     zs.innerHTML=R.length?`<b>${R.length}</b> zone${R.length>1?'s':''}: <b>${fmtA(area)}</b> m², <b>${km.toFixed(2)}</b> km of track, <b>${ln}</b> lanes at ${SIM.lane.toFixed(2)} m`:'Tick the zones this job covers.'; }
-  if(!R.length){ st.innerHTML='<p class="calc-empty">Tick zones in step 1 to plan and simulate the clean.</p>'; play.disabled=true; play.textContent='Play'; updatePlayhead(); updateLive(); return; }
-  if(!tl){ st.innerHTML='<p class="calc-warn">The plan can\'t be scheduled with these settings. See step 3.</p>'; play.disabled=true; updateLive(); return; }
+  if(!R.length){ st.innerHTML='<p class="calc-empty">Tick zones in step 1 to plan and simulate the clean.</p>'; play.disabled=true; play.textContent='Play'; updatePlayhead(); updateLive(); updateScrub(); return; }
+  if(!tl){ st.innerHTML='<p class="calc-warn">The plan can\'t be scheduled with these settings. See step 3.</p>'; play.disabled=true; updateLive(); updateScrub(); return; }
   const T=SIM.T, pct=tl.total?Math.min(1,T/tl.total):0, nb=tl.P.robots, over=R.filter(r=>r.maxT>TETHER);
   play.disabled=false; play.textContent=SIM.playing?'Pause':(pct>=1?'Replay':(T>0?'Resume':'Play'));
   st.innerHTML=
@@ -2539,7 +2572,7 @@ function updateSimUI(){
         `<div class="zrow-meta"><span class="t">${r.paidOut} m tether paid out${warn?' (beyond 125 m)':''}${r.shaftTurn?`; works only the half on its own side, so the tether never crosses the shaft; includes the hub and boss cap. Turning gear: ${Math.abs(r.shaftSet*180/Math.PI)<3?`two blades already sit 45° either side of DP${(r.dsKey||r.cfg.ds).slice(2)}'s side`:`first turn the shaft ${Math.abs(Math.round(r.shaftSet*180/Math.PI))}° ${r.shaftSet>=0?'clockwise':'anticlockwise'} (looking forward from astern) so two blades sit 45° either side of DP${(r.dsKey||r.cfg.ds).slice(2)}'s side`}, then turn it 180° halfway while the robot waits clear`:''}</span><span>${fmtA(zoneArea(r))} m²</span></div></div>`; }).join('')+
     `</div>`+
     (over.length?`<p class="calc-warn">${over.map(r=>r.cfg.short).join(', ')}: the furthest point is beyond the ${TETHER} m tether. Move the deployment point or split the zone.</p>`:'');
-  updatePlayhead(); updateLive();
+  updatePlayhead(); updateLive(); updateScrub();
 }
 
 // ---- operation plan: robots, cleaning windows, setup and pack-down, launches and battery swaps ----
@@ -3253,6 +3286,7 @@ function overlayTop(){
 function resize(){
   const w=Math.max(1,stage.clientWidth), h=Math.max(1,stage.clientHeight);
   renderer.setSize(w,h,false);
+  try{ updateScrub(); }catch(e){}                                                       // the scrubber stays clear of the panel and the card (not before the simulation exists)
   // shift the projection centre so the model sits in the part of the stage not covered by panels
   const d=overlayHeight()-overlayTop(), dx=overlayLeft()-overlayRight();
   virtH=h+Math.abs(d); const vw=w+Math.abs(dx), oy=d>0?d:0, ox=dx<0?-dx:0;
@@ -4493,6 +4527,10 @@ $('simAll').addEventListener('click',()=>{ document.querySelectorAll('#simZones 
 $('simNone').addEventListener('click',()=>{ document.querySelectorAll('#simZones input').forEach(c=>c.checked=false); zonesChanged(false); });
 $('simPlay').addEventListener('click',()=>{ if(!SIM.tl) return; if(SIM.T>=SIM.tl.total-1e-9){ SIM.T=0; applyTimeline(true); } SIM.playing=!SIM.playing; SIM.last=0; updateSimUI(); });
 $('simReset').addEventListener('click',()=>{ SIM.playing=false; SIM.T=0; applyTimeline(true); updateSimUI(); });
+$('scrubT').addEventListener('input',e=>{ if(!SIM.tl) return; SCRUB_DRAG=true; SIM.T=(+e.target.value/1000)*SIM.tl.total; SIM.last=0;   // jump to that moment
+  applyTimeline(true); updatePlayhead(); updateLive(); updateScrub(); });
+$('scrubT').addEventListener('change',()=>{ SCRUB_DRAG=false; updateSimUI(); });
+$('scrubPlay').addEventListener('click',()=>$('simPlay').click());
 $('simMult').addEventListener('change',e=>{ SIM.mult=+e.target.value; });
 $('simLive').addEventListener('change',updateLive);                                   // live metrics beside the view
 $('pMode').addEventListener('change',()=>{ podUI(); placePods(); if(SIM.runs.length){ SIM.prev=simStats(); rebuildSimKeep(); } else updatePlan(); });   // technician or pod
