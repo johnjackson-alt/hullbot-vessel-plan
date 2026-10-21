@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Hullbot Vessel Plan: LUDRICK, MR product tanker</title>
+<title>Vessel Hull Planner: LUDRICK, MR product tanker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
@@ -104,6 +104,25 @@ button{font:inherit;color:inherit;}
 .views button[data-act="night"][aria-pressed="true"]{background:#0e1b2c;color:#fff;}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none;}
 .views{position:absolute;top:14px;right:14px;display:flex;gap:4px;padding:3px;background:var(--surface);border-radius:8px;box-shadow:var(--shadow);z-index:3;}
+.view-in{padding:2px 0;}
+.dpsel{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;margin:0 0 8px;font-size:12px;}.dpsel>span{width:100%;font-weight:600;color:var(--ink-soft);}
+.dpsel label{display:flex;align-items:center;gap:4px;font-weight:600;}.dpsel em{font-style:normal;font-weight:400;color:var(--ink-soft);}.view-in select{flex:1;}
+.live{position:absolute;top:14px;right:14px;width:280px;max-height:calc(100% - 28px);overflow:auto;background:var(--surface);border-radius:10px;box-shadow:var(--shadow);padding:10px 12px 12px;font-size:12px;line-height:1.35;z-index:3;color:var(--ink);}
+.live h3{margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);display:flex;justify-content:space-between;align-items:center;}
+.live h3 button{border:0;background:none;color:var(--ink-soft);font-size:16px;line-height:1;cursor:pointer;padding:0 2px;}
+.live .lv-op{font-weight:600;margin-bottom:4px;}
+.live .lv-bar{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;margin:4px 0 2px;}
+.live .lv-bar i{display:block;height:100%;background:var(--ink);}
+.live .lv-grid{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 0 2px;}
+.live .lv-grid span{color:var(--ink-soft);}.live .lv-grid b{text-align:right;font-weight:600;}
+.live .lv-h{margin:8px 0 2px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);}
+.live .lv-r{padding:5px 0;border-top:1px solid var(--rule);}.live .lv-r .t{display:flex;justify-content:space-between;gap:6px;}
+.live .lv-r .m{color:var(--ink-soft);font-size:11px;margin-top:1px;}
+.live .lv-r i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;}
+.live .lv-batt{display:inline-block;width:30px;height:7px;border:1px solid var(--ink-soft);border-radius:2px;vertical-align:-1px;margin-right:4px;position:relative;overflow:hidden;}
+.live .lv-batt em{position:absolute;left:0;top:0;bottom:0;}
+.live .lv-next{margin-top:6px;padding-top:6px;border-top:1px solid var(--rule);color:var(--ink-soft);}
+@media (max-width:899px){ .live{top:auto;bottom:10px;left:10px;right:10px;width:auto;max-height:42%;} }
 .view-pick{display:flex;align-items:center;gap:6px;padding:0 4px 0 8px;font-size:12px;font-weight:600;color:var(--ink-soft);}
 .view-pick select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--rule);border-radius:5px;padding:4px 6px;cursor:pointer;}
 .views button{border:0;background:none;padding:6px 11px;border-radius:5px;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;}
@@ -380,12 +399,26 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
 </head>
 <body>
 <div id="app">
-  <aside class="panel" id="panel" aria-label="Hullbot Vessel Plan">
-    <button class="panel-toggle" id="panelToggle" aria-expanded="true" aria-controls="panelBody"><span class="pt-title">Hullbot Vessel Plan</span><svg class="pt-logo" viewBox="0 0 40 40" aria-hidden="true"><path fill="currentColor" d="M5 5.6C5 4.1 6.4 3.2 7.8 3.7C15.6 6.4 24.4 6.4 32.2 3.7C33.6 3.2 35 4.1 35 5.6C35 7.3 34.2 8.9 33 10.1C29.6 13.5 25.2 15.4 20 15.4C14.8 15.4 10.4 13.5 7 10.1C5.8 8.9 5 7.3 5 5.6Z"/><path fill="currentColor" transform="matrix(1 0 0 -1 0 40)" d="M5 5.6C5 4.1 6.4 3.2 7.8 3.7C15.6 6.4 24.4 6.4 32.2 3.7C33.6 3.2 35 4.1 35 5.6C35 7.3 34.2 8.9 33 10.1C29.6 13.5 25.2 15.4 20 15.4C14.8 15.4 10.4 13.5 7 10.1C5.8 8.9 5 7.3 5 5.6Z"/></svg><span class="pt-chev" aria-hidden="true"></span></button>
+  <aside class="panel" id="panel" aria-label="Vessel Hull Planner">
+    <button class="panel-toggle" id="panelToggle" aria-expanded="true" aria-controls="panelBody"><span class="pt-title">Vessel Hull Planner</span><svg class="pt-logo" viewBox="0 0 40 40" aria-hidden="true"><path fill="currentColor" d="M5 5.6C5 4.1 6.4 3.2 7.8 3.7C15.6 6.4 24.4 6.4 32.2 3.7C33.6 3.2 35 4.1 35 5.6C35 7.3 34.2 8.9 33 10.1C29.6 13.5 25.2 15.4 20 15.4C14.8 15.4 10.4 13.5 7 10.1C5.8 8.9 5 7.3 5 5.6Z"/><path fill="currentColor" transform="matrix(1 0 0 -1 0 40)" d="M5 5.6C5 4.1 6.4 3.2 7.8 3.7C15.6 6.4 24.4 6.4 32.2 3.7C33.6 3.2 35 4.1 35 5.6C35 7.3 34.2 8.9 33 10.1C29.6 13.5 25.2 15.4 20 15.4C14.8 15.4 10.4 13.5 7 10.1C5.8 8.9 5 7.3 5 5.6Z"/></svg><span class="pt-chev" aria-hidden="true"></span></button>
     <div class="panel-body" id="panelBody">
       <div class="panel-intro">
         <p>LUDRICK, a fictional French-flagged MR product tanker, 183 m long with a 32.2 m beam. Proportions are typical of the class, not a specific ship.</p>
       </div>
+      <details class="sect controls" id="viewSect" open>
+        <summary>View</summary>
+        <div class="controls-body"><label class="view-pick view-in" id="views"><span>Camera</span><select id="viewSel" aria-label="Camera view">
+          <option value="" hidden></option>
+          <option value="quarter" selected>3/4 below</option>
+          <option value="bowq">Bow 3/4</option>
+          <option value="port">Port</option>
+          <option value="stbd">Starboard</option>
+          <option value="bottom">Bottom</option>
+          <option value="bow">Bow</option>
+          <option value="stern">Stern</option>
+          <option value="deck">Deck plan</option>
+        </select></label></div>
+      </details>
       <details class="sect controls" id="controls" open>
         <summary>Layers</summary>
         <div class="controls-body">
@@ -451,11 +484,22 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
           </div>
           <div class="step">
             <div class="step-h"><span class="step-n">2</span>Zones to clean<span class="step-x"><button type="button" id="simAll">All</button><button type="button" id="simNone">None</button></span></div>
+            <div class="dpsel" id="dpSel"><span>Deployment points in use</span><label><input type="checkbox" value="DS1" checked>DP1 <em>stbd fwd</em></label><label><input type="checkbox" value="DS2" checked>DP2 <em>stbd aft</em></label><label><input type="checkbox" value="DS3" checked>DP3 <em>port fwd</em></label><label><input type="checkbox" value="DS4" checked>DP4 <em>port aft</em></label></div>
             <div class="zsel" id="simZones"><label><input type="checkbox" value="S:fwd"><i data-z="S:fwd"></i>Stbd fwd (DP1)</label><label><input type="checkbox" value="P:fwd"><i data-z="P:fwd"></i>Port fwd (DP3)</label><label><input type="checkbox" value="S:aft"><i data-z="S:aft"></i>Stbd aft (DP2)</label><label><input type="checkbox" value="P:aft"><i data-z="P:aft"></i>Port aft (DP4)</label><label><input type="checkbox" value="B:fwd"><i data-z="B:fwd"></i>Bottom fwd (DP1, 3)</label><label><input type="checkbox" value="B:aft"><i data-z="B:aft"></i>Bottom aft (DP2, 4)</label><label><input type="checkbox" value="bow:S"><i data-z="bow:S"></i>Bow stbd (DP1)</label><label><input type="checkbox" value="bow:P"><i data-z="bow:P"></i>Bow port (DP3)</label><label><input type="checkbox" value="stern:S"><i data-z="stern:S"></i>Stern stbd (DP2)</label><label><input type="checkbox" value="stern:P"><i data-z="stern:P"></i>Stern port (DP4)</label><label><input type="checkbox" value="N:rudder"><i data-z="N:rudder"></i>Rudder (DP2)</label><label><input type="checkbox" value="N:prop"><i data-z="N:prop"></i>Propeller (DP4)</label></div>
             <p class="step-sum" id="zoneSum"></p>
           </div>
           <div class="step">
             <div class="step-h"><span class="step-n">3</span>Mission settings</div>
+            <div class="grp"><div class="grp-h">Deployment</div>
+              <div class="plan-in c3">
+                <label title="How the robot gets into and out of the water at each deployment point">Type<select id="pMode"><option value="tech" selected>Technician</option><option value="pod">Pod</option></select></label>
+                <label class="pod-only" hidden title="The pod lowering the robot on its tether into the water, or winding it back up inside">Pod deploy, min<input id="pPodDeploy" type="number" min="0" max="60" step="0.5" value="3"></label>
+              </div>
+              <div class="plan-in c3">
+                <label title="Fixed: the tether is paid out to the zone's full length before the robot starts. Managed: the winch pays out and winds in as the robot moves, keeping just enough out to reach it with a little slack">Tether<select id="pTether"><option value="fixed" selected>Fixed length</option><option value="managed">Managed: extends and retracts</option></select></label>
+                <label title="Battery: the robot runs on its battery and needs swaps or recharges. Powered tether: it runs on power through the tether, with no battery limit">Power<select id="pPower"><option value="batt" selected>Battery</option><option value="tether">Powered tether</option></select></label>
+              </div>
+              <p class="plan-ref pod-only" id="podNote" hidden>A pod is clamped to the deck railing at each deployment point in use. It lowers the robot into the water on its tether, pays the tether out and winds it in as the robot works (the tether is always managed), winds the robot back up inside, and recharges it there (Charge, min, under Robot and batteries): no technician launches or battery swaps. Each pod holds one robot; Per DP sets how many pods at each deployment point.</p></div>
             <div class="grp"><div class="grp-h">Robots and windows</div>
               <div class="plan-in c4">
                 <label>Robots<input id="pRobots" type="number" min="1" max="10" step="1" value="4"></label>
@@ -516,6 +560,7 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
               <label class="sim-mult">Speed<select id="simMult"><option value="1">Real time</option><option value="10">×10</option><option value="25">×25</option><option value="50">×50</option><option value="100">×100</option><option value="200">×200</option><option value="300">×300</option><option value="1000">×1000</option><option value="3000" selected>×3000</option><option value="10000">×10000</option></select></label>
               <label class="switch"><input type="checkbox" id="simFollow">Follow robot</label>
               <label class="switch" id="simTrRow"><input type="checkbox" id="simHideTr">Hide track lines while running</label>
+              <label class="switch" id="simLiveRow"><input type="checkbox" id="simLive" checked>Live metrics beside the view while it runs</label>
             </div>
             <div class="calc" id="simStat"></div>
           </div>
@@ -534,22 +579,8 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
   </aside>
 
   <main class="stage" id="stage">
-    <div class="stage-title"><h1>Hullbot Vessel Plan</h1><p>LUDRICK, MR product tanker, 183 m by 32.2 m</p></div>
-    <nav class="views" id="views" aria-label="Camera views">
-      <label class="view-pick"><span>View</span>
-        <select id="viewSel" aria-label="Camera view">
-          <option value="" hidden></option>
-          <option value="quarter" selected>3/4 below</option>
-          <option value="bowq">Bow 3/4</option>
-          <option value="port">Port</option>
-          <option value="stbd">Starboard</option>
-          <option value="bottom">Bottom</option>
-          <option value="bow">Bow</option>
-          <option value="stern">Stern</option>
-          <option value="deck">Deck plan</option>
-        </select>
-      </label>
-    </nav>
+    <div class="live" id="live" hidden></div>
+    <div class="stage-title"><h1>Vessel Hull Planner</h1><p>LUDRICK, MR product tanker, 183 m by 32.2 m</p></div>
     <div class="demo-cap" id="demoCap" aria-live="polite"></div>
     <button type="button" class="demo-stop" id="demoStop" hidden>Stop demo</button>
     <article class="card" id="card" hidden aria-live="polite">
@@ -1886,7 +1917,12 @@ function zoneColor(key){ if(SIMZ[key]&&SIMZ[key].col) return SIMZ[key].col; cons
 const SIM={runs:[], bots:[], tl:null, T:0, playing:false, last:0, ui:0, lane:0.35, speed:1*0.514444, mult:3000, follow:false, prev:null, topside:'ds'};
 const dsOf=key=>(HULL.cat?CAT_DS:DZ).find(z=>z.key===key);
 function surfW(x,h,side,off){ const q=surf(x,h,side), n=WN(q.n); return {p:W3(q.p.x+X0,q.p.y,q.p.z).addScaledVector(n,off), n}; }
-function railStart(pts,nrm,dsx,side){ pts.push(W3(dsx,D+0.9/VS.sy,side*(edgeY(dsx)+0.25/VS.sz))); nrm.push(new V3(0,0,side)); }   // robot starts at the railing
+const podMode=()=>!!($('pMode')&&$('pMode').value==='pod'), tetherManaged=()=>podMode()||!!($('pTether')&&$('pTether').value==='managed');   // a pod always manages its tether
+// the pod sits on the rail with its bottom just above the deck edge; the robot is stowed fully inside it, above the bay, and the
+// tether comes off the drum near the top and out through the bay
+const POD={base:0.10, out:0.06, botY:0.42, botZ:0.22, drumY:0.95, exitY:0.06, exitZ:0.29};
+function railStart(pts,nrm,dsx,side){ if(podMode()){ pts.push(W3(dsx,D+POD.botY/VS.sy,side*(edgeY(dsx)+POD.botZ/VS.sz)),W3(dsx,D+POD.exitY/VS.sy,side*(edgeY(dsx)+POD.exitZ/VS.sz))); nrm.push(new V3(0,0,side),new V3(0,0,side)); }
+  else { pts.push(W3(dsx,D+0.9/VS.sy,side*(edgeY(dsx)+0.25/VS.sz))); nrm.push(new V3(0,0,side)); } }   // at the railing, or stowed in a pod and down out of its bay   // robot starts at the railing
 function sideTrack(cfg,lane){
   // points every 25 cm at the bow and stern, where the hull curves tightly in plan, so the line between them stays outside it
   const side=cfg.side, top=draught/VS.sy, x0=cfg.x0(), x1=cfg.x1(), ds=dsOf(cfg.ds), dsx=(ds.x0+ds.x1)/2, stepB=(cfg.endGap?0.25:1)/VS.sx;
@@ -1903,8 +1939,12 @@ function sideTrack(cfg,lane){
     return 17/sum; };
   const lanesH=[]; { let h=top-0.3*rAt(top)/VS.sy; while(h>0.02){ lanesH.push(h); let d=lane*rAt(h)/VS.sy; d=lane*rAt(h-d/2)/VS.sy; h-=d; } }
   const hT=lanesH[0], start=inc?Math.max(x0,xEndA(hT)):Math.min(x1,xEndF(hT));
-  railStart(pts,nrm,dsx,side);
-  for(let h=D-0.4; h>hT+0.25; h-=0.5/VS.sy){ const q=surfW(dsx,h,side,off); pts.push(q.p); nrm.push(q.n); }   // lowered down the topsides
+  const sd=ds.s||side; railStart(pts,nrm,dsx,sd);
+  if(sd!==side){ // from a deployment point on the other side: down that side, across under the flat bottom at its frame, up this side
+    for(let h=D-0.4; h>0.35; h-=0.5/VS.sy){ const q=surfW(dsx,h,sd,off); pts.push(q.p); nrm.push(q.n); }
+    const e=Math.max(0,halfBreadth(dsx,0)-0.15), down=new V3(0,-1,0); for(let i=0;i<=24;i++){ pts.push(W3(dsx,0,sd*e-2*sd*e*i/24).add(new V3(0,-0.03,0))); nrm.push(down); }
+    for(let h=0.35; h<hT-0.05; h+=0.5/VS.sy){ const q=surfW(dsx,h,side,off); pts.push(q.p); nrm.push(q.n); } }
+  else for(let h=D-0.4; h>hT+0.25; h-=0.5/VS.sy){ const q=surfW(dsx,h,side,off); pts.push(q.p); nrm.push(q.n); }   // lowered down the topsides
   { const n=Math.max(1,Math.ceil(Math.abs(start-dsx)/stepB)); for(let i=0;i<=n;i++){ const q=surfW(dsx+(start-dsx)*i/n,hT,side,off); pts.push(q.p); nrm.push(q.n); } }
   const transitN=pts.length; let lanes=0, prevH=null;
   for(const h of lanesH){ const xa=Math.max(x0,xEndA(h)), xb=Math.min(x1,xEndF(h)); if(xb-xa<0.5) continue;
@@ -1941,13 +1981,10 @@ function nicheTrack(cfg,lane,opts){
     for(let j=0;j<hs.length;j++) faceLane(-side,hs[hs.length-1-j],atTE?j%2===1:j%2===0);   // then the other face, bottom to top
     lanes=hs.length*2;
     return {pts,nrm,lanes,transitN}; }
-  // propeller, planned so the tether can't snag on the shaft. The robot only ever works the half of the propeller on its own
-  // deployment point's side: the line then always leads straight back to that side and never crosses the shaft between the hub
-  // and the stern tube. Phase 1 cleans that half: the forward half of the hub (arcs within 85° of its own side), the blades on
-  // that side face to face round their tips, then round outside the tips (through the gap on its own side) to the aft half of
-  // the hub and the boss cap. The robot then parks clear, outboard of the tips, while the engine room turns the shaft 180° on
-  // the turning gear, which brings the other blades and the other half of the hub round to it; phase 2 repeats the same route.
-  // Blade passes follow the blade's pitched and skewed surface (same shape as the model's blades).
+  // propeller: every blade, on both sides, in one sweep from the robot's own side: down that side, across under the hub and up
+  // the far side, never over the top, so the tether can't wrap the shaft; on the way out it comes back the same way, under the
+  // bottom, and the line unwinds. Each blade face to face round its tip; then the hub aft of the roots and down the boss cap in
+  // arcs from side to side round under the bottom. Blade passes follow the blade's pitched and skewed surface.
   const Rp=3.1, rh=0.8, cMax=2.05, Pp=4.3, cx=5.25, ch=3.8, m=2*Math.max(1,Math.ceil(cMax/lane/2)), Rr=Rp+0.45, RH=0.95;
   const homeA=Math.atan2(side*3.9,hA-ch), wrapA=a=>Math.atan2(Math.sin(a),Math.cos(a));      // angle round the shaft, from up towards starboard
   // before starting, the shaft is set so two blades sit 45° either side of the robot's side: even their roots then stay well
@@ -1962,30 +1999,28 @@ function nicheTrack(cfg,lane,opts){
   const rim=(a,dx)=>push(cx+dx,ch+Rr*Math.cos(a),Rr*Math.sin(a),WN(new V3(dx>0?1:dx<0?-1:0,dx?0:Math.cos(a),dx?0:Math.sin(a))));
   const arc=(a0,a1,dx)=>{ const n=Math.max(1,Math.ceil(Math.abs(a1-a0)/0.25)); for(let i=1;i<=n;i++) rim(a0+(a1-a0)*i/n,dx); };
   const capR=x=>RH+(0.28-RH)*clamp((4.5-x)/1.1,0,1);                                         // boss cap: tapers aft from the hub
-  const hubArcs=(xs,rOf)=>{ let dir=1; for(const x of xs){ const dr=(rOf(x+0.05)-rOf(x-0.05))/0.1;   // arcs within 80° of the robot's own side, on the surface's own slope
-      for(let i=0;i<=14;i++){ const a=homeA+dir*(-80+160*i/14)*Math.PI/180, n=new V3(-dr,Math.cos(a),Math.sin(a)).normalize(), r=rOf(x);
-        push(x+n.x*0.05,ch+r*Math.cos(a)+n.y*0.05,r*Math.sin(a)+n.z*0.05,WN(n)); } dir=-dir; lanes++; } };
+  // the angle round from the top towards the robot's own side (0 to 2 pi): the sweep only ever moves through the bottom, never the top
+  const wOf=a=>{ const v=wrapA(side*a); return v>=0?v:2*Math.PI+v; }, aOf=w=>side*w;
+  const arcW=(w0,w1,dx)=>{ const n=Math.max(1,Math.ceil(Math.abs(w1-w0)/0.25)); for(let i=1;i<=n;i++) rim(aOf(w0+(w1-w0)*i/n),dx); };
+  // the hub and boss cap: arcs from one side round under the bottom to the other, back and forth, clear of the top
+  const hubSweep=(xs,rOf,startHigh)=>{ let dir=startHigh?-1:1; const wa=0.26, wb=2*Math.PI-0.26;
+    for(const x of xs){ const dr=(rOf(x+0.05)-rOf(x-0.05))/0.1;
+      for(let i=0;i<=28;i++){ const w=dir>0?wa+(wb-wa)*i/28:wb-(wb-wa)*i/28, a=aOf(w), n=new V3(-dr,Math.cos(a),Math.sin(a)).normalize(), r=rOf(x);
+        push(x+n.x*0.05,ch+r*Math.cos(a)+n.y*0.05,r*Math.sin(a)+n.z*0.05,WN(n)); } dir=-dir; lanes++; }
+    return dir>0?wa:wb; };
   const steps=(x0,x1)=>{ const out=[], n=Math.max(1,Math.round(Math.abs(x1-x0)/lane)); for(let i=0;i<=n;i++) out.push(x0+(x1-x0)*i/n); return out; };
-  const near=[0,1,2,3].map(k=>({k,d:wrapA(0.35+rot0+k*Math.PI/2-homeA)})).filter(q=>Math.abs(q.d)<=Math.PI/2+1e-6);
-  const order=near.filter(q=>q.d>=0).sort((a,c)=>a.d-c.d).concat(near.filter(q=>q.d<0).sort((a,c)=>c.d-a.d));
-  const wind=Math.max(...near.map(q=>Math.abs(q.d)),80*Math.PI/180);
+  const wHome=wOf(homeA), blades=[0,1,2,3].map(k=>{ const a=0.35+rot0+k*Math.PI/2; return {k,a,w:wOf(a)}; }).sort((p,q)=>p.w-q.w);
   const face=(k,sd)=>{ let out=false; for(let j=0;j<m;j++){ const sc=(-0.5+(j+0.5)/m)*0.9;                // starts and ends at the tip
       for(let i=0;i<=10;i++){ const rn=0.18+0.76*(out?i:10-i)/10, q=bladePt(k,rn,sc,sd); pts.push(q.p); nrm.push(q.n); } out=!out; lanes++; } };   // root end clear of the hub
-  const phase=()=>{
-    let cur=0;
-    for(const q of order){ arc(homeA+cur,homeA+q.d,0.7); cur=q.d; const tip=homeA+q.d+0.265;   // the tips are skewed about 15° round from the blade's root
-      face(q.k,0); rim(tip,0); rim(tip,-0.7);                                                   // forward face, round its tip to the aft side
-      face(q.k,1); rim(tip,-0.7); rim(tip,0); rim(homeA+cur,0.7); }                             // aft face, back round the same tip
-    arc(homeA+cur,homeA,0.7); rim(homeA,0); rim(homeA,-0.7);                                 // round the outside, through the gap on its own side
-    hubArcs([4.62].concat(steps(4.3,3.55)),capR);                                              // hub aft of the roots, then on down the boss cap, back and forth
-    rim(homeA,-0.7); rim(homeA,0); rim(homeA,0.7); };                                         // back to the forward side
-  rim(homeA,0.7); const transitN=pts.length;
-  phase();
-  // the shaft is turned 180° on the turning gear while the robot waits clear, outboard of the tips on its own side
-  const pk=(dx,ex)=>push(cx+dx,ch+(Rr+ex)*Math.cos(homeA),(Rr+ex)*Math.sin(homeA),WN(new V3(0,Math.cos(homeA),Math.sin(homeA))));
-  pk(1.0,0.8); const turn0=pts.length-1; pk(1.4,1.4); pk(1.0,0.8); const turn1=pts.length-1; rim(homeA,0.7);
-  phase();
-  return {pts,nrm,lanes,transitN,wind:wind*180/Math.PI,shaftTurn:[turn0,turn1],shaftSet:rot0}; }
+  rim(homeA,0.7); const transitN=pts.length; let cw=wHome;
+  for(const q of blades){ arcW(cw,q.w,0.7); cw=q.w; const tip=q.a+0.265;   // the tips are skewed about 15° round from the blade's root
+    face(q.k,0); rim(tip,0); rim(tip,-0.7);                                   // forward face, round its tip to the aft side
+    face(q.k,1); rim(tip,-0.7); rim(tip,0); rim(aOf(cw),0.7); }               // aft face, back round the same tip
+  rim(aOf(cw),0); rim(aOf(cw),-0.7);                                          // to the aft side at the far end of the sweep
+  const wEnd=hubSweep([4.62].concat(steps(4.3,3.55)),capR,cw>Math.PI);       // hub aft of the roots, then down the boss cap
+  rim(aOf(wEnd),-0.7); rim(aOf(wEnd),0); rim(aOf(wEnd),0.7); arcW(wEnd,wHome,0.7); rim(homeA,0.7);   // back the same way, under the bottom
+  const wind=Math.max(cw,wEnd,wHome)-Math.min(blades[0].w,wHome);
+  return {pts,nrm,lanes,transitN,wind:wind*180/Math.PI,shaftSet:rot0}; }
 function bottomTrack(cfg,lane){
   // flat bottom: lanes run side to side, port to starboard, starting at midships and working away from it
   const x0=cfg.x0(), x1=cfg.x1(), ds=dsOf(cfg.ds), dsx=(ds.x0+ds.x1)/2, side=ds.s, down=new V3(0,-1,0), pts=[], nrm=[];
@@ -2002,6 +2037,7 @@ function bottomTrack(cfg,lane){
     s0=-s0; lanes++; }
   return {pts,nrm,lanes,transitN}; }
 function tetherFixed(run,dsKey){ if(HULL.cat) return catTetherFixed(run,dsKey); const ds=dsOf(dsKey||run.dsKey||run.cfg.ds), side=ds.s, dsx=(ds.x0+ds.x1)/2, path=[];
+  if(podMode()){ path.push(W3(dsx,D+POD.drumY/VS.sy,side*(edgeY(dsx)+POD.exitZ/VS.sz)),W3(dsx,D+POD.exitY/VS.sy,side*(edgeY(dsx)+POD.exitZ/VS.sz))); path.railIdx=1; if(!dsKey) run.railIdx=1; return path; }   // from the pod's drum, out of its bay
   path.push(W3(dsx-0.4/VS.sx,D+0.15/VS.sy,ds.z0+side*0.2/VS.sz));    // paid out at the deployment point
   let secMax=edgeY(dsx); for(let h=0;h<=D;h+=D/24) secMax=Math.max(secMax,halfBreadth(dsx,h));
   const zOut=side*(secMax+0.35/VS.sz);                                 // just outboard of the widest part of the hull at this frame
@@ -2084,10 +2120,15 @@ function travelPose(r,alt,sT,u){ if(r.kind==='cat') return catTravelPose(r,sT,u)
   const pts=[A.entry.clone(),A.entry.clone().lerp(tgt,(x-d1)/d2),tgt.clone()]; hullContact(pts,side);
   return {i:0,p:pts[1],nr:q.nr,a:A.entry,b:tgt}; }
 function buildRun(key){
-  const cfg=SIMZ[key], kind=cfg.kind, chained=key==='N:prop'&&simKeys().includes('N:rudder')&&!SIM.noChain;
-  let opts=null; if(chained){ const rt=nicheTrack(SIMZ['N:rudder'],SIM.lane), n=rt.pts.length-1; opts={from:{p:rt.pts[n],n:rt.nrm[n]},ds:SIMZ['N:rudder'].ds}; }      // its tether runs back to the rudder's deployment point
-  const t=kind==='cat'?catTrack(cfg,SIM.lane):kind==='bot'?bottomTrack(cfg,SIM.lane):kind==='niche'?nicheTrack(cfg,SIM.lane,opts):sideTrack(cfg,SIM.lane);
-  const r={key,cfg,kind,chained,dsKey:chained?SIMZ['N:rudder'].ds:cfg.ds,pts:t.pts,nrm:t.nrm,par:t.par,area:t.area,wind:t.wind,shaftTurn:t.shaftTurn,shaftSet:t.shaftSet,lanes:t.lanes,transitN:t.transitN,s:0,tNow:0,slack:0};
+  let cfg=dpCfg(SIMZ[key]); const kind=cfg.kind, chained=key==='N:prop'&&simKeys().includes('N:rudder')&&!SIM.noChain;   // (worked from the deployment point in use)
+  let opts=null; if(chained){ const rt=nicheTrack(SIMZ['N:rudder'],SIM.lane), n=rt.pts.length-1; opts={from:{p:rt.pts[n],n:rt.nrm[n]},ds:rudderDS()}; }      // its tether runs back to the rudder's deployment point
+  const mk=c=>kind==='cat'?catTrack(c,SIM.lane):kind==='bot'?bottomTrack(c,SIM.lane):kind==='niche'?nicheTrack(c,SIM.lane,opts):sideTrack(c,SIM.lane);
+  let t=mk(cfg);
+  // worked from the deployment point in use that needs the least tether to reach it (its own unless another needs at least 5% less);
+  // a flat-bottom zone shared by both its points keeps them, and the propeller chained to the rudder keeps the rudder's
+  if(!chained&&!(cfg.alt&&DP_ON.has(cfg.alt))&&DP_ON.size>1){ const best=dpNearest(cfg,t); if(best!==cfg.ds){ cfg=Object.assign({},cfg,{ds:best,alt:null}); t=mk(cfg); } }
+
+  const r={key,cfg,kind,chained,dsKey:chained?rudderDS():cfg.ds,pts:t.pts,nrm:t.nrm,par:t.par,area:t.area,wind:t.wind,shaftTurn:t.shaftTurn,shaftSet:t.shaftSet,lanes:t.lanes,transitN:t.transitN,s:0,tNow:0,slack:0};
   r.fixed=tetherFixed(r); r.fixedLen=pathLen(r.fixed);
   if(cfg.alt){ const ds=dsOf(cfg.alt), side=ds.s, dsx=(ds.x0+ds.x1)/2, ap=[], an=[], tgt=t.pts[t.transitN]||t.pts[t.pts.length-1];
     railStart(ap,an,dsx,side);
@@ -2243,7 +2284,8 @@ function placeBot(b,r,s,snap,alt,travel,back){
   let free, from;
   if(p.y>draught+0.05){ from=RI; const top=FX[from]; free=[]; for(let k=0;k<TN;k++) free.push(top.clone().lerp(rear,k/(TN-1)));
     b.tNow=pathLen(FX.slice(0,from+1))+top.distanceTo(rear); b.slack=0; }
-  else { from=FX.length-1; const P=FX[from], Sw=r.paidOut-FL; b.bladeN=0;
+  else { from=FX.length-1; const P=FX[from], Sw=tetherManaged()                                   // managed: just enough out to reach the robot along the hull, plus a little slack
+      ?Math.max(0.5,Math.min(r.paidOut-FL,drapedLen(P,rear,runSide(r),16)*1.03+1.0)):r.paidOut-FL; b.bladeN=0; b.paid=FL+Sw;
     // a hanging line from the deck edge, so the whole line moves from where it's deployed. It hangs with the slack paid out,
     // but never less than it takes for the line to fall off the rail at least 50 degrees below horizontal
     const steep=ps=>{ const d=ps[1].clone().sub(ps[0]); return -d.y>=Math.tan(50*Math.PI/180)*Math.hypot(d.x,d.z); };
@@ -2316,6 +2358,61 @@ function buildTimeline(S,P){
     off+=w.onsite; });
   return {bots,zone,wStart,total:off,P,windows:S.windows,parts:S.parts}; }
 const runByKey=k=>SIM.runs.find(r=>r.key===k);
+// ---- deployment points in use. A zone whose own point is switched off is worked from the nearest one still in use: on the same side
+// if there is one, otherwise from the other side, across under the keel. A flat-bottom zone uses whichever of its two points is on
+const DP_ON=new Set(['DS1','DS2','DS3','DS4']);
+function dpEff(key,side,alt){ if(DP_ON.has(key)) return key; if(alt&&DP_ON.has(alt)) return alt;
+  const xOf=z=>HULL.cat?catX(z):(z.x0+z.x1)/2, all=(HULL.cat?CAT_DS:DZ).filter(z=>/^DS\d$/.test(z.key||'')&&DP_ON.has(z.key)); if(!all.length) return key;
+  const me=dsOf(key), xm=me?xOf(me):0, sm=me?me.s:side, same=all.filter(z=>z.s===sm), pool=same.length?same:all;
+  return pool.reduce((a,z)=>Math.abs(xOf(z)-xm)<Math.abs(xOf(a)-xm)?z:a).key; }
+function dpCfg(base){ if(!base||!base.ds) return base; const ds=dpEff(base.ds,base.side,base.alt), alt=base.alt&&DP_ON.has(base.alt)&&base.alt!==ds?base.alt:null;
+  return (ds===base.ds&&alt===(base.alt||null))?base:Object.assign({},base,{ds,alt}); }
+// the tether a zone needs from a deployment point: the longest run along the hull (fore and aft, down from the rail, and round the
+// bilge if it's on the other side) to any point of its cleaning track
+function dpTetherEst(key,t){ const ds=dsOf(key); if(!ds||!t||!t.pts) return Infinity; let P;
+  if(HULL.cat) P=catTopEntry(ds).top; else { const dsx=(ds.x0+ds.x1)/2; P=W3(dsx,D+0.9/VS.sy,ds.s*(edgeY(dsx)+0.25/VS.sz)); }
+  let mx=0; const i0=Math.max(0,t.transitN||0), st=Math.max(1,Math.floor((t.pts.length-i0)/200));
+  for(let i=i0;i<t.pts.length;i+=st){ const p=t.pts[i], same=Math.sign(p.z)===ds.s||Math.abs(p.z)<0.5;
+    const L=Math.abs(p.x-P.x)+Math.max(0,P.y-p.y)+(same?Math.abs(Math.abs(p.z)-Math.abs(P.z)):Math.abs(p.z)+Math.abs(P.z)); if(L>mx) mx=L; }
+  return mx; }
+// the deployment point the rudder is worked from (the propeller chained to it carries on from there): the same nearest choice
+function rudderDS(){ const rr=SIM.runs.find(r=>r.key==='N:rudder'); if(rr) return rr.dsKey||rr.cfg.ds;
+  const c=dpCfg(SIMZ['N:rudder']); return DP_ON.size>1?dpNearest(c,nicheTrack(c,SIM.lane)):c.ds; }
+function dpNearest(cfg,t){ let best=cfg.ds, bL=dpTetherEst(cfg.ds,t)*0.95; for(const k of DP_ON){ if(k===cfg.ds) continue; const L=dpTetherEst(k,t); if(L<bL){ bL=L; best=k; } } return best; }
+// the zone list says which point each zone will be worked from
+function dpLabels(){ document.querySelectorAll('#simZones label').forEach(l=>{ const inp=l.querySelector('input'); if(!inp) return; const run=SIM.runs.find(r=>r.key===inp.value);
+    const c=run?{ds:run.dsKey||run.cfg.ds,alt:run.cfg.alt}:dpCfg(SIMZ[inp.value]); if(!c||!c.ds) return;
+    const tn=[...l.childNodes].filter(n=>n.nodeType===3).pop(); if(!tn) return; const lab=`(DP${c.ds.slice(2)}${c.alt?', '+c.alt.slice(2):''})`;
+    tn.textContent=/\(DP[^)]*\)/.test(tn.textContent)?tn.textContent.replace(/\(DP[^)]*\)/,lab):tn.textContent+' '+lab; }); }
+// ---- the pod: clamped to the deck railing outboard, it lowers the robot from the bay in its bottom and winds it back up inside to
+// recharge. A white shell with a sloping top, a black spine on the back with the clamp tube and connectors, and the dark bay beneath
+const podGroup=new THREE.Group(); scene.add(podGroup); let POD_PROTO=null;
+function makePod(){ const g=new THREE.Group(), Wd=0.72, Dp=0.46, H=1.3, sh=new THREE.Shape();
+  sh.moveTo(0,0); sh.lineTo(Dp-0.08,0); sh.quadraticCurveTo(Dp,0,Dp,0.12); sh.lineTo(Dp,0.78); sh.quadraticCurveTo(Dp,0.9,Dp-0.1,1.02);
+  sh.lineTo(0.22,H-0.04); sh.quadraticCurveTo(0.16,H,0.08,H); sh.lineTo(0,H); sh.lineTo(0,0);
+  const geo=new THREE.ExtrudeGeometry(sh,{depth:Wd-0.08,bevelEnabled:true,bevelThickness:0.04,bevelSize:0.04,bevelSegments:4,curveSegments:10}); geo.translate(0,0,-(Wd-0.08)/2);
+  g.add(new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0xe9ebed,roughness:0.45,metalness:0.05})));
+  const blk=new THREE.MeshStandardMaterial({color:0x16181b,roughness:0.5}), spine=new THREE.Mesh(new THREE.BoxGeometry(0.05,H*0.98,Wd*0.5),blk); spine.position.set(-0.03,H*0.49,0); g.add(spine);
+  const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,0.42,16),new THREE.MeshStandardMaterial({color:0x5c6166,roughness:0.4,metalness:0.4})); tube.position.set(-0.09,H*0.52,0); g.add(tube);
+  const cm=new THREE.MeshStandardMaterial({color:0x9aa0a6,metalness:0.6,roughness:0.3});
+  for(const yy of [0.98,1.06,1.14]){ const c=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.03,12),cm); c.rotation.z=Math.PI/2; c.position.set(-0.06,yy,0.1); g.add(c); }
+  const bay=new THREE.Mesh(new THREE.BoxGeometry(Dp*0.8,0.03,Wd*0.7),new THREE.MeshStandardMaterial({color:0x0d0f11,roughness:0.9})); bay.position.set(Dp*0.5,-0.03,0); g.add(bay);
+  return g; }
+let POD_LIST=[];
+function placePods(){ for(const o of POD_LIST) if(o.parent) o.parent.remove(o); POD_LIST=[]; podGroup.visible=true; if(!podMode()) return; if(!POD_PROTO) POD_PROTO=makePod();
+  const par=HULL.cat&&typeof catGroup!=='undefined'&&catGroup?catGroup:podGroup;            // with the hull it's on (the catamaran and cruise ship have their own group)
+  const per=Math.max(1,Math.min(8,Math.round(+(($('pPerDp')||{}).value)||1)));          // Per DP: that many pods, side by side along the rail
+  for(const key of DP_ON){ const ds=dsOf(key); if(!ds) continue; const s=ds.s;
+    for(let k=0;k<per;k++){ const off=(k%2?1:-1)*Math.ceil(k/2)*0.9; let base;              // the first at the point itself, then aft and forward of it
+      if(HULL.cat){ const G=HULL.G, xd=catX(ds)+off, dk=G.Dt(xd), e=G.c+G.w(xd,dk); base=CW(xd,dk+POD.base,s*(e+POD.out)); }
+      else { const dsx=(ds.x0+ds.x1)/2+off/VS.sx; base=W3(dsx,D+POD.base/VS.sy,s*(edgeY(dsx)+POD.out/VS.sz)); }
+      const pd=POD_PROTO.clone(); pd.position.copy(base); pd.rotation.y=s>0?-Math.PI/2:Math.PI/2; par.add(pd); POD_LIST.push(pd); } } }
+// the settings that only apply to one deployment type
+function podUI(){ const pod=podMode(); document.querySelectorAll('.pod-only').forEach(e=>{ e.hidden=!pod; });
+  const ts=$('pTether'); if(ts){ if(pod){ if(!ts.disabled) ts.dataset.prev=ts.value; ts.value='managed'; ts.disabled=true; ts.title='The pod always manages the tether: its winch pays out and winds in as the robot moves'; }
+    else if(ts.disabled){ ts.value=ts.dataset.prev||'fixed'; ts.disabled=false; ts.title=''; } }
+  const pw=!!($('pPower')&&$('pPower').value==='tether');
+  for(const id of ['pBatt','pSwap','pCharge','pChg','pDpSwap']){ const e=$(id); if(e){ e.disabled=pw; e.title=pw?'Powered tether: no battery limit':''; } } }
 const partsOf=key=>(SIM.tl&&SIM.tl.parts&&SIM.tl.parts[key])||[{a:0,b:1,dir:1}];
 // how much of one part of a zone is done at time T (0 to 1)
 function partProg(key,i,T){ const iv=SIM.tl&&SIM.tl.zone[key]; if(!iv) return 0; let q=0;
@@ -2331,16 +2428,16 @@ function botAt(j,T){ const segs=SIM.tl.bots[j]; if(!segs||!segs.length) return n
     const alt=!!(pt.alt&&r.alt), s0=alt?r.alt.len:r.cum[Math.max(0,r.transitN-1)], dpN=(alt?r.alt.ds:(r.dsKey||r.cfg.ds)).slice(2);   // route from the part's deployment point
     if(g.k==='clean'){ const q=g.f0+(g.f1-g.f0)*(T-g.t0)/Math.max(1e-9,g.t1-g.t0); return {r,alt,s:s0+partPos(pt,q)*r.cleanLen,status:`Cleaning ${lab}`,busy:true}; }
     if(g.k==='launch'){ const sT=s0+partPos(pt,g.from)*r.cleanLen, tr=g.t1-g.t0-g.relaunch;
-      if(T<g.t0+g.relaunch) return {r,alt,s:0,status:g.after?`Relaunching Seawolf and robot, ${lab}`:`Launching at DP${dpN} for ${lab}`,busy:true};
+      if(T<g.t0+g.relaunch) return {r,alt,s:0,status:SIM.tl.P.pod?(g.after?`Lowered from the pod again, ${lab}`:`Lowered from the pod at DP${dpN} for ${lab}`):(g.after?`Relaunching Seawolf and robot, ${lab}`:`Launching at DP${dpN} for ${lab}`),busy:true};
       const u=Math.min(1,(T-g.t0-g.relaunch)/Math.max(1e-9,tr));
       if(g.chain) return {r,alt,s:sT*u,status:`Heading over to ${lab}`,busy:true};          // carrying on from the rudder
       return {r,alt,s:sT,travel:u,status:`Heading out to ${lab}`,busy:true}; }
     if(g.k==='swap'){ const sF=s0+partPos(pt,g.frac)*r.cleanLen;
-      if(T<g.t0+g.transit) return {r,alt,s:sF,travel:1-(T-g.t0)/Math.max(1e-9,g.transit),back:true,status:`Returning for a battery swap, ${lab}`,busy:true};
-      return {r,alt,s:0,status:g.atDP?`Battery swap at DP${dpN}, stopped as it passed`:`Battery swap at DP${dpN}`,busy:true}; } } }
+      if(T<g.t0+g.transit) return {r,alt,s:sF,travel:1-(T-g.t0)/Math.max(1e-9,g.transit),back:true,status:SIM.tl.P.pod?`Returning to the pod to recharge, ${lab}`:`Returning for a battery swap, ${lab}`,busy:true};
+      return {r,alt,s:0,status:SIM.tl.P.pod?`Back up in the pod at DP${dpN}, recharging`:(g.atDP?`Battery swap at DP${dpN}, stopped as it passed`:`Battery swap at DP${dpN}`),busy:true}; } } }
   const g=last||segs[0], r=runByKey(g.key); if(!r) return null;
   const done=last&&last===segs[segs.length-1]&&T>last.t1, gp=partsOf(g.key)[g.part||0]||{};
-  return {r,alt:!!(gp.alt&&r.alt),s:0,status:done?'Finished, on deck':(last?'On deck: window break or waiting':'On deck, waiting to launch'),busy:false}; }
+  return {r,alt:!!(gp.alt&&r.alt),s:0,status:SIM.tl.P.pod?(done?'Finished, in its pod':(last?'In its pod: window break or waiting':'In its pod, waiting to be lowered')):(done?'Finished, on deck':(last?'On deck: window break or waiting':'On deck, waiting to launch')),busy:false}; }
 function applyTimeline(snap){
   if(!SIM.tl){ SIM.bots.forEach(b=>{ b.robot.visible=b.tether.visible=b.route.visible=false; }); return; }
   const T=SIM.T;
@@ -2360,9 +2457,9 @@ function applyTimeline(snap){
   if(HULL.cat) drawCleanMap(catSegs);
   SIM.bots.forEach((b,j)=>{ const st=botAt(j,T); b.state=st; b.robot.visible=b.tether.visible=!!st; if(!st) b.route.visible=false; if(st) placeBot(b,st.r,st.s,snap,st.alt,st.travel,st.back); });
   // halfway through the propeller clean the shaft is turned 180° on the turning gear while the robot waits clear: turn the model with it
-  { const r=SIM.runs.find(q=>q.shaftTurn); let rot=0;
-    if(r){ rot=r.shaftSet||0; const s0=r.cum[r.shaftTurn[0]], s1=r.cum[r.shaftTurn[1]];
-      for(const b of SIM.bots){ const st=b.state; if(st&&st.r===r&&st.s!=null&&st.travel==null) rot+=Math.PI*clamp((st.s-s0)/Math.max(1e-6,s1-s0),0,1); } }
+  { const r=SIM.runs.find(q=>q.shaftSet!=null); let rot=0;                     // the propeller set at the angle its track was planned for
+    if(r){ rot=r.shaftSet||0; if(r.shaftTurn){ const s0=r.cum[r.shaftTurn[0]], s1=r.cum[r.shaftTurn[1]];
+      for(const b of SIM.bots){ const st=b.state; if(st&&st.r===r&&st.s!=null&&st.travel==null) rot+=Math.PI*clamp((st.s-s0)/Math.max(1e-6,s1-s0),0,1); } } }
     propeller.rotation.x=rot; }
 }
 function updatePlayhead(){ const T=SIM.T, tl=SIM.tl;
@@ -2386,13 +2483,44 @@ const runTotal=r=>r.cum[r.cum.length-1];
 function simStats(){ const R=SIM.runs; return {time:SIM.tl?SIM.tl.total*3600:0, km:R.reduce((a,r)=>a+r.cleanLen,0)/1000,
   area:R.reduce((a,r)=>a+zoneArea(r),0), lanes:R.reduce((a,r)=>a+r.lanes,0), robots:R.length}; }
 const fmtShort=sec=>{ const h=Math.floor(sec/3600), m=Math.round((sec%3600)/60); return h?`${h}h ${String(m).padStart(2,'0')}m`:`${m} min`; };
+// ---- live metrics beside the view while the simulation runs: the operation as it stands, and each robot ----
+const lvEsc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function liveBatt(j,T){ const segs=SIM.tl&&SIM.tl.bots[j]; if(!segs) return null; let start=null;      // hours of battery left: fresh at launch and after each swap
+  for(const g of segs){ if(g.t0>T) break; if(g.k==='launch'&&start==null) start=g.t0+(g.relaunch||0); if(g.k==='swap'&&T>=g.t1) start=g.t1; }
+  return start==null?null:Math.max(0,SIM.tl.P.batt-Math.max(0,T-start)); }
+function liveNext(T){ let best=null; (SIM.tl.bots||[]).forEach((segs,j)=>{ for(const g of segs||[]){ if(g.t0>T&&g.k==='swap'){ if(!best||g.t0<best.t) best={t:g.t0,j}; break; } } }); return best; }
+function updateLive(){ const el=$('live'), on=$('simLive'); if(!el) return; const tl=SIM.tl, R=SIM.runs;
+  const show=!!(on&&on.checked&&R.length&&tl&&(SIM.playing||SIM.T>0)); el.hidden=!show; if(!show) return;
+  el.style.right=(!mq.matches&&card&&!card.hidden)?(card.offsetWidth+28)+'px':'';                     // beside the feature card when that's open
+  const T=SIM.T, P=tl.P, pct=tl.total?Math.min(1,T/tl.total):0, tot=R.reduce((a,r)=>a+zoneArea(r),0), done=R.reduce((a,r)=>a+zoneArea(r)*(r.frac||0),0);
+  let wi=0; (tl.wStart||[]).forEach((t0,i)=>{ if(T>=t0) wi=i; }); const wEnd=(tl.wStart[wi]||0)+((tl.windows[wi]||{}).onsite||0);
+  const live=SIM.bots.filter(b=>b.state), cleaning=live.filter(b=>/^Cleaning/.test(b.state.status)).length, nx=liveNext(T), wy=water.position.y, ys=HULL.cat?1:VS.sy;
+  el.innerHTML=`<h3>Live metrics<button type="button" aria-label="Hide live metrics" data-close>×</button></h3>`+
+    `<div class="lv-op">${lvEsc(VESSEL.name||'Vessel')}: ${R.length} zone${R.length>1?'s':''}, ${fmtA(tot)} m²</div>`+
+    `<div class="lv-bar"><i style="width:${(pct*100).toFixed(1)}%"></i></div>`+
+    `<div class="lv-grid"><span>Elapsed</span><b>${fmtH(T)} of ${fmtH(tl.total)} (${Math.round(pct*100)}%)</b>`+
+    `<span>Window</span><b>${wi+1} of ${tl.windows.length}, ${fmtH(Math.max(0,wEnd-T))} left</b>`+
+    `<span>Hull cleaned</span><b>${fmtA(done)} m² (${tot?Math.round(done/tot*100):0}%)</b>`+
+    `<span>Still to clean</span><b>${fmtA(Math.max(0,tot-done))} m²</b>`+
+    `<span>Cleaning now</span><b>${cleaning} of ${live.length} robot${live.length===1?'':'s'}</b>`+
+    `<span>Average so far</span><b>${T>0?fmtA(done/T):0} m²/h</b>`+
+    `<span>Time left</span><b>${fmtH(Math.max(0,tl.total-T))}</b></div>`+
+    `<div class="lv-h">Robots</div>`+
+    SIM.bots.map((b,j)=>{ const s=b.state; if(!s) return ''; const bl=liveBatt(j,T), bp=bl!=null?clamp(bl/P.batt,0,1):null, dep=b.robot.visible?Math.max(0,(wy-b.robot.position.y)/ys):0;
+      const bc=bp==null?'':bp<0.2?'#e03131':bp<0.4?'#f08c00':'#2f9e44';
+      const pw=P.powered?'powered by tether · ':'', tq=P.managed&&b.paid?` (${Math.round(b.paid)} m out, managed)`:'';
+      return `<div class="lv-r"><div class="t"><b><i style="background:${s.r.color}"></i>R${j+1}, ${lvEsc(s.r.cfg.short)}</b><span>${Math.round((s.r.frac||0)*100)}% of zone</span></div>`+
+        `<div class="m">${lvEsc(s.status)}</div>`+
+        `<div class="m">${pw}${!P.powered&&bp!=null?`<span class="lv-batt"><em style="width:${(bp*100).toFixed(0)}%;background:${bc}"></em></span>${fmtH(bl)} battery · `:''}tether ${Math.round(b.tNow||0)} m${tq||((b.slack||0)>0.5?` (${Math.round(b.slack)} m slack)`:'')}${dep>0.05?` · ${dep.toFixed(1)} m deep`:''}</div></div>`; }).join('')+
+    (nx&&!P.powered?`<div class="lv-next">Next ${P.pod?'recharge in the pod':'battery swap'}: R${nx.j+1} in ${fmtH(nx.t-T)}</div>`:'');
+  const c=el.querySelector('[data-close]'); if(c) c.onclick=()=>{ on.checked=false; updateLive(); }; }
 function updateSimUI(){
-  updatePlan();
+  updatePlan(); dpLabels();
   const st=$('simStat'), play=$('simPlay'), R=SIM.runs, tl=SIM.tl, zs=$('zoneSum');
   if(zs){ const area=R.reduce((a,r)=>a+zoneArea(r),0), km=R.reduce((a,r)=>a+r.cleanLen,0)/1000, ln=R.reduce((a,r)=>a+r.lanes,0);
     zs.innerHTML=R.length?`<b>${R.length}</b> zone${R.length>1?'s':''}: <b>${fmtA(area)}</b> m², <b>${km.toFixed(2)}</b> km of track, <b>${ln}</b> lanes at ${SIM.lane.toFixed(2)} m`:'Tick the zones this job covers.'; }
-  if(!R.length){ st.innerHTML='<p class="calc-empty">Tick zones in step 1 to plan and simulate the clean.</p>'; play.disabled=true; play.textContent='Play'; updatePlayhead(); return; }
-  if(!tl){ st.innerHTML='<p class="calc-warn">The plan can\'t be scheduled with these settings. See step 3.</p>'; play.disabled=true; return; }
+  if(!R.length){ st.innerHTML='<p class="calc-empty">Tick zones in step 1 to plan and simulate the clean.</p>'; play.disabled=true; play.textContent='Play'; updatePlayhead(); updateLive(); return; }
+  if(!tl){ st.innerHTML='<p class="calc-warn">The plan can\'t be scheduled with these settings. See step 3.</p>'; play.disabled=true; updateLive(); return; }
   const T=SIM.T, pct=tl.total?Math.min(1,T/tl.total):0, nb=tl.P.robots, over=R.filter(r=>r.maxT>TETHER);
   play.disabled=false; play.textContent=SIM.playing?'Pause':(pct>=1?'Replay':(T>0?'Resume':'Play'));
   st.innerHTML=
@@ -2411,7 +2539,7 @@ function updateSimUI(){
         `<div class="zrow-meta"><span class="t">${r.paidOut} m tether paid out${warn?' (beyond 125 m)':''}${r.shaftTurn?`; works only the half on its own side, so the tether never crosses the shaft; includes the hub and boss cap. Turning gear: ${Math.abs(r.shaftSet*180/Math.PI)<3?`two blades already sit 45° either side of DP${(r.dsKey||r.cfg.ds).slice(2)}'s side`:`first turn the shaft ${Math.abs(Math.round(r.shaftSet*180/Math.PI))}° ${r.shaftSet>=0?'clockwise':'anticlockwise'} (looking forward from astern) so two blades sit 45° either side of DP${(r.dsKey||r.cfg.ds).slice(2)}'s side`}, then turn it 180° halfway while the robot waits clear`:''}</span><span>${fmtA(zoneArea(r))} m²</span></div></div>`; }).join('')+
     `</div>`+
     (over.length?`<p class="calc-warn">${over.map(r=>r.cfg.short).join(', ')}: the furthest point is beyond the ${TETHER} m tether. Move the deployment point or split the zone.</p>`:'');
-  updatePlayhead();
+  updatePlayhead(); updateLive();
 }
 
 // ---- operation plan: robots, cleaning windows, setup and pack-down, launches and battery swaps ----
@@ -2420,9 +2548,18 @@ function updateSimUI(){
 function planInputs(){ const v=(id,d,lo,hi)=>{ const x=parseFloat($(id).value); return clamp(isNaN(x)?d:x,lo,hi); };
   const star=$('pStar').checked, chg=$('pChg').checked, su=v('pSetup',40,0,600), pk=v('pPack',40,0,600);
   // Starlink's 15 min covers setup and pack-up together, so it's split between them; charging lines add 15 min to setup
-  return {dpSwap:$('pDpSwap').checked, photo:v('pPhoto',1,0,30)/60, areas:Math.round(v('pAreas',8,0,60)), niche:Math.round(v('pNiche',13,0,60)), perDp:Math.round(v('pPerDp',2,1,8)), chargers:Math.round(v('pChargers',2,0,12)), rate:v('pRate',5,0.1,30), avail:Math.round(v('pWins',1,1,60)), robots:Math.round(v('pRobots',4,1,10)), win:v('pWin',8,1,48), cont:v('pCont',10,0,100)/100, relaunch:v('pRelaunch',5,0,240)/60,
+  const P={dpSwap:$('pDpSwap').checked, photo:v('pPhoto',1,0,30)/60, areas:Math.round(v('pAreas',8,0,60)), niche:Math.round(v('pNiche',13,0,60)), perDp:Math.round(v('pPerDp',2,1,8)), chargers:Math.round(v('pChargers',2,0,12)), rate:v('pRate',5,0.1,30), avail:Math.round(v('pWins',1,1,60)), robots:Math.round(v('pRobots',4,1,10)), win:v('pWin',8,1,48), cont:v('pCont',10,0,100)/100, relaunch:v('pRelaunch',5,0,240)/60,
     batt:v('pBatt',60,15,1440)/60, swap:v('pSwap',10,0,120)/60, charge:v('pCharge',70,0,600)/60, star, chg,
-    setup:(su+(star?7.5:0)+(chg?15:0))/60, pack:(pk+(star?7.5:0))/60}; }
+    setup:(su+(star?7.5:0)+(chg?15:0))/60, pack:(pk+(star?7.5:0))/60};
+  // a pod on the railing at each deployment point in use: it lowers the robot and winds it back in (the launch), and recharges it
+  // inside (the battery change becomes back up into the pod, recharge, lowered again). One robot per pod; no charging lines
+  P.pod=!!($('pMode')&&$('pMode').value==='pod'); P.managed=tetherManaged();
+  // powered through the tether: no battery limit, so no swaps, pod recharges or charging lines
+  P.powered=!!($('pPower')&&$('pPower').value==='tether');
+  if(P.pod){ const dep=v('pPodDeploy',3,0,60)/60, chgT=v('pCharge',70,0,600)/60; P.podDeploy=dep; P.podCharge=chgT;   // recharged in the pod over the battery charge time
+    P.relaunch=dep; P.swap=dep+chgT; P.chg=false; P.setup=(su+(star?7.5:0))/60; }
+  if(P.powered){ P.batt=1e4; P.chg=false; P.setup=(su+(star?7.5:0))/60; }
+  return P; }
 // try a few ways of splitting the work between robots and keep the one that finishes soonest
 function planSchedule(P){ return planScheduleCore(P); }
 function planScheduleCore(P){
@@ -2450,7 +2587,8 @@ function planScheduleCore(P){
   const mAt=(tk,q)=>{ const R=tk.run, arr=tk.alt&&R.alt?R.alt.dist:R.dist; return distAt(arr,partPos(tk,q)); };   // metres from the deployment point
   // order: bow, stern and niche areas first, then the vertical side faces, then the flat bottom
   const pri=k=>SIMZ[k].pri!=null?SIMZ[k].pri:(/^(bow|stern|N:)/.test(k)?0:(/^B:/.test(k)?2:1));
-  tasks.sort((x,y)=>pri(x.key)-pri(y.key)||SIM_ORDER.indexOf(x.key)-SIM_ORDER.indexOf(y.key)||x.part-y.part); tasks.forEach(t=>t.left=t.work);
+  // nearest zones first, within each kind
+  tasks.sort((x,y)=>pri(x.key)-pri(y.key)||(x.run.maxT-y.run.maxT)||SIM_ORDER.indexOf(x.key)-SIM_ORDER.indexOf(y.key)||x.part-y.part); tasks.forEach(t=>t.left=t.work);
   const chain=tasks.some(t=>t.key==='N:rudder')&&tasks.some(t=>t.key==='N:prop')&&!SIM.noChain; let rudderDone=!chain;
   const queue=tasks.slice(), windows=[];
   while(queue.length){
@@ -2494,7 +2632,11 @@ function planScheduleCore(P){
       return null; };
     for(;;){ const free=robots.filter(r=>!r.done&&r.t<usable-1e-6); if(!free.length||!queue.length) break;
       const rb=free.reduce((a,b)=>a.t<=b.t?a:b);
-      const qi=queue.findIndex(tk=>busyAt(tk.dp,rb.t)<P.perDp&&!(tk.key==='N:prop'&&!rudderDone));   // the propeller waits for the rudder robot
+      const okT=tk=>busyAt(tk.dp,rb.t)<P.perDp&&!(tk.key==='N:prop'&&!rudderDone);              // the propeller waits for the rudder robot
+      // the next zone: the most urgent kind first (niche, bow and stern, then the sides, the flat bottom last); within that, one from
+      // the robot's own deployment point if there is one, nearest first
+      let qi=-1; { const ids=[]; queue.forEach((tk,i)=>{ if(okT(tk)) ids.push(i); });
+        if(ids.length){ const pm=Math.min(...ids.map(i=>pri(queue[i].key))), c=ids.filter(i=>pri(queue[i].key)===pm), own=rb.dp?c.find(i=>queue[i].dp===rb.dp):undefined; qi=own!=null?own:c[0]; } }
       if(qi<0){ // every deployment point with work left is full: wait for the next robot to come off one
         const dps=new Set(queue.map(tk=>tk.dp)), ends=[]; dps.forEach(dp=>(occ[dp]||[]).forEach(iv=>{ if(iv[1]>rb.t+1e-9) ends.push(iv[1]); }));
         if(!ends.length){ rb.done=true; continue; } rb.t=Math.min(...ends); if(rb.t>=usable-1e-6) rb.done=true; continue; }
@@ -2531,7 +2673,7 @@ function updatePlan(force){
   W.forEach((w,i)=>{ gantt+=`<div class="gw"><span class="gplay"></span><div class="gw-head"><b class="${i>=P.avail?'xtra':''}">Window ${i+1}${i>=P.avail?' (extra)':''}</b><span>${fmtH(w.onsite)} on site</span></div>`+
     `<div class="gr"><span class="gl">Crew</span><div class="gbar">${seg(0,P.setup,'g-setup','','Setup '+fmtH(P.setup)+(P.star||P.chg?' incl. '+[P.star?'Starlink':'',P.chg?'charging lines':''].filter(Boolean).join(' and '):''))}${seg(P.setup+w.span,P.setup+w.span+P.pack,'g-setup','','Pack-down '+fmtH(P.pack))}</div></div>`;
     w.robots.forEach((r,j)=>{ gantt+=`<div class="gr"><span class="gl">R${j+1}</span><div class="gbar">`+r.seg.map(s=>s.k==='clean'?seg(P.setup+s.a,P.setup+s.b,'g-clean',`background:${s.color}`,`${s.name}: ${fmtH(s.b-s.a)} cleaning`)
-      :s.k==='launch'?seg(P.setup+s.a,P.setup+s.b,'g-launch','',s.after?`Relaunch Seawolf and the robot after the battery swap, back to ${s.name}: ${fmtH(s.b-s.a)}`:`Launch to ${s.name}: ${fmtH(s.b-s.a)}`):seg(P.setup+s.a,P.setup+s.b,s.atDP?'g-swap g-dp':'g-swap','',s.atDP?`Battery changed at the deployment point as the robot passed it: ${fmtH(s.b-s.a)}`:`Robot back to the deployment point, out of the water and battery swapped: ${fmtH(s.b-s.a)}`)).join('')+`</div></div>`; });
+      :s.k==='launch'?seg(P.setup+s.a,P.setup+s.b,'g-launch','',P.pod?(s.after?`Lowered from the pod again after recharging, back to ${s.name}: ${fmtH(s.b-s.a)}`:`Lowered from the pod, out to ${s.name}: ${fmtH(s.b-s.a)}`):(s.after?`Relaunch Seawolf and the robot after the battery swap, back to ${s.name}: ${fmtH(s.b-s.a)}`:`Launch to ${s.name}: ${fmtH(s.b-s.a)}`)):seg(P.setup+s.a,P.setup+s.b,s.atDP?'g-swap g-dp':'g-swap','',P.pod?(s.atDP?`Back up into the pod as the robot passed it, recharged: ${fmtH(s.b-s.a)}`:`Robot back up into the pod and recharged: ${fmtH(s.b-s.a)}`):(s.atDP?`Battery changed at the deployment point as the robot passed it: ${fmtH(s.b-s.a)}`:`Robot back to the deployment point, out of the water and battery swapped: ${fmtH(s.b-s.a)}`))).join('')+`</div></div>`; });
     gantt+='</div>'; });
   // windows available against windows needed; anything beyond what's available is shown in red
   const A=P.avail, N=W.length, short=N>A, more=N-A, pl=n=>n===1?'':'s';
@@ -2582,6 +2724,8 @@ function batteryPlan(S,P){
   return {rows,optC,floor,keepUp,fitted,swapsMax:Math.max(0,...wins.map(w=>w.dem.length))};
 }
 function renderBatteries(S,P){ const el=$('battOut'); if(!el) return;
+  if(P.powered){ el.innerHTML=`<p class="plan-ref">Powered tether: the robots run on power through the tether, so there are no batteries, swaps or charging to plan.</p>`; return; }
+  if(P.pod){ el.innerHTML=`<p class="plan-ref">Pods: each robot recharges in its own pod between runs (${Math.round(P.podCharge*60)} min), so there are no spare batteries or charging lines to plan.</p>`; return; }
   if(!S){ el.innerHTML='<p class="calc-empty">Plan a clean in steps 1 to 4 first.</p>'; return; }
   const B=batteryPlan(S,P), c=P.chg?P.chargers:0, row=B.rows.find(r=>r.c===Math.min(c,B.rows[B.rows.length-1].c))||B.rows[0], mx=B.rows[0].total||1;
   const tile=(k,v,extra,cls)=>`<div class="tile${cls?' '+cls:''}"><div class="k">${k}</div><div class="v">${v}</div>${extra?`<div class="d">${extra}</div>`:''}</div>`;
@@ -2906,7 +3050,7 @@ function demoShots(){ const cat=HULL.cat, Lw=cat?HULL.G.L:L*VS.sx, Bw=cat?HULL.G
   const wideA=0.55, wideR=Lw*0.9, widePos=new V3(Math.cos(wideA)*wideR,T-Lw*0.16,Math.sin(wideA)*wideR), wideTg=new V3(Lw*0.04,T*0.55,0);
   DEMO.widePos=widePos; DEMO.wideTg=wideTg;
   return [
-    {dur:9, night:false, mult:10, reveal:true, cap:'Hullbot Vessel Plan', sub:`Four H6.3 robots cleaning a fouled ${nm}, one from each deployment point`, widePos, wideTg},
+    {dur:9, night:false, mult:10, reveal:true, cap:'Vessel Hull Planner', sub:`Four H6.3 robots cleaning a fouled ${nm}, one from each deployment point`, widePos, wideTg},
     {dur:7, night:false, mult:40, cap:'Working the hull', sub:'DP1 on the starboard side, DP2 on the rudder, DP3 on the port side, DP4 on the propeller',
       cam:u=>{ const x=(-0.44+0.88*easeIO(u))*Lw; return {pos:new V3(x,T*0.35,Bw+34*k+5), tg:new V3(x+12*k,T*0.45,Bw*0.85)}; }},
     {dur:7, night:false, mult:4, follow:0, orbit:0.9, cap:'Close up on the hull', sub:'Brush drums at 200 rpm, lanes 35 cm apart at constant depth'},
@@ -3103,7 +3247,7 @@ function overlayLeft(){ return (mq.matches||panel.classList.contains('collapsed'
 function overlayTop(){
   if(!mq.matches) return 0;
   const sr=stage.getBoundingClientRect(); let t=0;
-  for(const el of [$('views')]){ t=Math.max(t,el.getBoundingClientRect().bottom-sr.top); }
+  for(const el of [document.querySelector('.stage-title')]){ if(el&&el.offsetParent) t=Math.max(t,el.getBoundingClientRect().bottom-sr.top); }
   return Math.min(t,sr.height*0.4);
 }
 function resize(){
@@ -3311,6 +3455,7 @@ function catDPs(G){ const out=[];
   return out; }
 let CAT_DS=[];
 function catTetherFixed(run,dsKey){ const G=HULL.G, ds=dsOf(dsKey||run.dsKey||run.cfg.ds), s=ds.s, xd=catX(ds), dk=G.Dt(xd), e=G.c+G.w(xd,dk), path=[];
+  if(podMode()){ path.push(CW(xd,dk+POD.drumY,s*(e+POD.exitZ)),CW(xd,dk+POD.exitY,s*(e+POD.exitZ))); path.railIdx=1; if(!dsKey) run.railIdx=1; return path; }   // from the pod's drum, out of its bay
   path.push(CW(xd-0.4,dk+0.15,s*(G.mono?e+0.6:e-0.6))); path.railIdx=1; if(!dsKey) run.railIdx=1;
   path.push(CW(xd,dk+1.0,s*e), CW(xd,dk+0.9,s*(e+0.35))); return path; }
 // route a camera-guided robot follows from the start reference: down the outer side at the deployment frame,
@@ -3324,7 +3469,7 @@ function catRoute(ds,top,entry,face,q,xt){ const G=HULL.G, s=ds.s, xd=clamp(catX
   const n=Math.max(1,Math.ceil(Math.abs(xt-xd)/0.3)); for(let i=1;i<=n;i++) add(face,xd+(xt-xd)*i/n,q);
   const cum=new Float64Array(pts.length); for(let i=1;i<pts.length;i++) cum[i]=cum[i-1]+pts[i].distanceTo(pts[i-1]);
   return {pts,nrm,cum,len:cum[cum.length-1]}; }
-function catTopEntry(ds){ const G=HULL.G, s=ds.s, xd=catX(ds), dk=G.Dt(xd), e=G.c+G.w(xd,dk), top=CW(xd,dk+0.9,s*(e+0.35)), entry=top.clone(); entry.y=Math.min(top.y,draught); return {top,entry}; }
+function catTopEntry(ds){ const G=HULL.G, s=ds.s, xd=catX(ds), dk=G.Dt(xd), e=G.c+G.w(xd,dk), top=podMode()?CW(xd,dk+POD.botY,s*(e+POD.botZ)):CW(xd,dk+0.9,s*(e+0.35)), entry=top.clone(); entry.y=Math.min(top.y,draught); return {top,entry}; }
 // cleaning tracks for a catamaran zone: lanes along the hull at constant depth (sides) or constant girth (V bottom)
 // girth round one hull below the waterline at frame x: outer waterline, down the outer side, round the V, up the tunnel side
 function secArc(G,x,side,h1){ const k=G.hk(x); if(h1<=k) return 0; let L=0, pw=0, ph=k; const n=18; for(let i=1;i<=n;i++){ const h=k+(h1-k)*i/n, ww=G.w(x,h,side); L+=Math.hypot(ww-pw,h-ph); pw=ww; ph=h; } return L; }
@@ -3522,7 +3667,7 @@ function cruiseNicheTrack(cfg,lane,ds,top,entry){ const G=HULL.G, s=cfg.side, sp
     dir=true; for(const h of hs.slice().reverse()){ const xa=R.x0-0.1, xb=R.x1+0.1, m=Math.ceil((xb-xa)/0.2);
       for(let i=0;i<=m;i++){ const x=dir?xa+(xb-xa)*i/m:xb-(xb-xa)*i/m, q=cast(M,W(x,h,R.z0-2),new V3(0,0,s)); if(q){ q.lw=lwI; seq.push(q); } } dir=!dir; } }
   let lo=G.hk(ax), hi=Math.min(draught,G.Dc); for(let it=0;it<22;it++){ const m=(lo+hi)/2; if(G.w(ax,m)<az) lo=m; else hi=m; }
-  const sh=cruiseSurfH(G,ax,(lo+hi)/2,s,0.06), appr={x:ax,u:sh?sh.par.u:0.3,niche:true};
+  const sh=cruiseSurfH(G,ax,(lo+hi)/2,s,0.06), appr={x:ax,u:sh?sh.par.u:0.3,niche:true,s};
   const r0=cruiseRoute(ds,top,entry,appr), pts=r0.pts.slice(), nrm=r0.nrm.slice(), par=pts.map(()=>null), transitN=pts.length;
   for(const q of seq){ pts.push(q.p); nrm.push(q.n); par.push(q.lw?Object.assign({},appr,{lw:q.lw}):appr); }
   return {pts,nrm,lanes:1,transitN,par,area:cruiseNicheArea(sp)}; }
@@ -4229,7 +4374,7 @@ let TANKER_ZONE_HTML=null, CAT_SAVED=null;
 function setZoneList(){ const box=$('simZones'); if(!TANKER_ZONE_HTML) TANKER_ZONE_HTML=box.innerHTML;
   box.innerHTML=HULL.cat?activeZones().map(z=>`<label><input type="checkbox" value="${z[0]}"><i data-z="${z[0]}"></i>${z[2]} (DP${z[3].slice(2)}${z[5].alt?', '+z[5].alt.slice(2):''})</label>`).join(''):TANKER_ZONE_HTML;
   box.querySelectorAll('input').forEach(c=>c.checked=false);
-  box.querySelectorAll('i[data-z]').forEach(i=>{ i.style.background=zoneColor(i.dataset.z); }); }
+  box.querySelectorAll('i[data-z]').forEach(i=>{ i.style.background=zoneColor(i.dataset.z); }); dpLabels(); }
 // views sized to the catamaran: [direction, target, half width and half height to fit]
 const CAT_VIEWS={quarter:[[0.45,-0.32,0.83],[0,1.6,0],[16,6]],bowq:[[0.62,-0.42,0.66],[5,1.0,0],[11,5]],port:[[0,0.05,-1],[0,2.2,0],[15,5]],stbd:[[0,0.05,1],[0,2.2,0],[15,5]],bottom:[[0,-1,0.03],[0,0.4,0],[15,5.5]],
   bow:[[0.75,-0.08,0.66],[9,1.2,0],[7,4]],stern:[[-0.75,0.0,0.66],[-11,0.8,0],[6.5,3.8]],deck:[[0,1,0.002],[0,2.8,0],[15,5]]};
@@ -4257,16 +4402,17 @@ function exitCat(){ if(!HULL.cat) return; $('sbDepth').value=16; SIM.playing=fal
 const STANDARD={name:'LUDRICK', imo:'1234567', loa:BASE_LOA, beam:B, draught:T_DES, berth:'', side:0, standard:true};
 function imoValid(s){ if(!/^\d{7}$/.test(s)) return false; let sum=0; for(let i=0;i<6;i++) sum+=(+s[i])*(7-i); return sum%10===+s[6]; }
 function redrawNames(){ TEX.bowName(NAME_TEX.bow.image); NAME_TEX.bow.needsUpdate=true; TEX.transom(NAME_TEX.stern.image); NAME_TEX.stern.needsUpdate=true; }
-function updateIntro(){ const v=VESSEL;
+function updateIntro(){ updateIntro0(); document.title='Vessel Hull Planner: '+$$('.stage-title p').textContent; placePods(); }   // the tab follows the vessel
+function updateIntro0(){ const v=VESSEL;
   if(HULL.cat&&HULL.G&&HULL.G.mono){ const P=HULL.P, sak=v.imo===CRUISE0.imo; $$('.panel-intro p').textContent=`${v.name||'Cruise ship'}${v.imo?` (IMO ${v.imo})`:''}${sak?', formerly Seabourn Sojourn, Japanese flag':''}: ${P.loa.toFixed(2)} m cruise ship${P.lbp?` (${P.lbp.toFixed(1)} m between perpendiculars)`:''}, ${P.beam.toFixed(1)} m beam, ${P.draught.toFixed(2)} m draught. Built from a 3D model of her class, its hull measured off the model for the cleaning plan.`;
-    $$('.stage-title p').textContent=`${v.name||'Cruise ship'}, ${P.loa.toFixed(0)} m cruise ship`;
+    $$('.stage-title p').textContent=`${v.name||'Cruise ship'}, ${P.loa.toFixed(0)} m cruise ship`; document.title='Vessel Hull Planner: '+$$('.stage-title p').textContent;
     const vs=$('vesselSum'); if(vs) vs.innerHTML=`<b>${v.name||'Cruise ship'}</b>${v.imo?` (IMO ${v.imo})`:''}: cruise ship, ${P.loa.toFixed(2)} m long, ${P.beam.toFixed(1)} m beam, ${P.draught.toFixed(2)} m draught`; return; }
   if(HULL.cat){ const P=HULL.P; $$('.panel-intro p').textContent=`${v.name||'Catamaran'}: ${P.loa.toFixed(2)} m catamaran ferry, ${P.beam.toFixed(2)} m beam, two ${P.hullB.toFixed(2)} m hulls ${P.spacing.toFixed(2)} m apart, ${P.draught.toFixed(2)} m draught. Hull form from the Incat Hull 078 drawings.`;
-    $$('.stage-title p').textContent=`${v.name||'Catamaran'}, ${P.loa.toFixed(1)} m catamaran`;
+    $$('.stage-title p').textContent=`${v.name||'Catamaran'}, ${P.loa.toFixed(1)} m catamaran`; document.title='Vessel Hull Planner: '+$$('.stage-title p').textContent;
     const vs=$('vesselSum'); if(vs) vs.innerHTML=`<b>${v.name||'Catamaran'}</b>: catamaran, ${P.loa.toFixed(2)} m long, ${P.beam.toFixed(2)} m beam, hulls ${P.hullB.toFixed(2)} m wide and ${P.spacing.toFixed(2)} m apart, ${P.draught.toFixed(2)} m draught`; return; }
   $$('.panel-intro p').textContent=v.standard?'LUDRICK, a fictional French-flagged MR product tanker, 183 m long with a 32.2 m beam. Proportions are typical of the class, not a specific ship.'
     :`${v.name||'Unnamed vessel'}${v.imo?' (IMO '+v.imo+')':''}: ${v.loa.toFixed(1)} m long, ${v.beam.toFixed(1)} m beam, ${v.draught.toFixed(1)} m design draught${v.berth?', at '+v.berth:''}. The standard flat-bottom model is scaled to fit.`;
-  $$('.stage-title p').textContent=v.standard?'LUDRICK, MR product tanker, 183 m by 32.2 m':`${v.name||'Vessel'}, ${v.loa.toFixed(0)} m by ${v.beam.toFixed(1)} m`;
+  $$('.stage-title p').textContent=v.standard?'LUDRICK, MR product tanker, 183 m by 32.2 m':`${v.name||'Vessel'}, ${v.loa.toFixed(0)} m by ${v.beam.toFixed(1)} m`; document.title='Vessel Hull Planner: '+$$('.stage-title p').textContent;
   const vs=$('vesselSum'); if(vs) vs.innerHTML=`<b>${v.standard?'LUDRICK':(v.name||'Unnamed vessel')}</b>: ${v.loa.toFixed(1)} m long, ${v.beam.toFixed(1)} m beam, ${v.draught.toFixed(1)} m design draught${v.berth?`, at ${v.berth}`:''}${v.standard?' (standard model)':''}`; }
 $('vesselBtn').addEventListener('click',()=>openVessel());
 updateIntro();
@@ -4348,6 +4494,15 @@ $('simNone').addEventListener('click',()=>{ document.querySelectorAll('#simZones
 $('simPlay').addEventListener('click',()=>{ if(!SIM.tl) return; if(SIM.T>=SIM.tl.total-1e-9){ SIM.T=0; applyTimeline(true); } SIM.playing=!SIM.playing; SIM.last=0; updateSimUI(); });
 $('simReset').addEventListener('click',()=>{ SIM.playing=false; SIM.T=0; applyTimeline(true); updateSimUI(); });
 $('simMult').addEventListener('change',e=>{ SIM.mult=+e.target.value; });
+$('simLive').addEventListener('change',updateLive);                                   // live metrics beside the view
+$('pMode').addEventListener('change',()=>{ podUI(); placePods(); if(SIM.runs.length){ SIM.prev=simStats(); rebuildSimKeep(); } else updatePlan(); });   // technician or pod
+$('pPower').addEventListener('change',()=>{ podUI(); if(SIM.runs.length) SIM.prev=simStats(); updateSimUI(); });   // battery or powered tether
+$('pTether').addEventListener('change',()=>{ if(SIM.runs.length) SIM.prev=simStats(); applyTimeline(true); updateSimUI(); });   // fixed or managed tether
+$('pPodDeploy').addEventListener('input',()=>updatePlan());
+$('pPerDp').addEventListener('input',()=>placePods());                                   // pods per deployment point
+$('dpSel').addEventListener('change',e=>{ const c=e.target; if(c.tagName!=='INPUT') return;                    // deployment points in use (at least one)
+  const on=[...document.querySelectorAll('#dpSel input')].filter(i=>i.checked); if(!on.length){ c.checked=true; return; }
+  DP_ON.clear(); on.forEach(i=>DP_ON.add(i.value)); dpLabels(); placePods(); if(SIM.runs.length){ SIM.prev=simStats(); rebuildSimKeep(); } else updateSimUI(); });
 $('simSpd').addEventListener('change',e=>{ if(SIM.runs.length) SIM.prev=simStats(); const kn=clamp(parseFloat(e.target.value)||1,0.1,6); e.target.value=kn; SIM.speed=kn*0.514444; updateSimUI(); });   // knots to m/s
 $('simLane').addEventListener('change',e=>{ if(SIM.runs.length) SIM.prev=simStats(); SIM.lane=clamp(parseFloat(e.target.value)||0.35,0.1,1); e.target.value=SIM.lane; rebuildSimKeep(); });
 $('simFollow').addEventListener('change',e=>{ SIM.follow=e.target.checked; });
