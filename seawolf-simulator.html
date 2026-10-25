@@ -666,7 +666,7 @@ function paintFouling(H){
   const af=hexRGB(PAINT.af), top=hexRGB(PAINT.top), slime=[104,92,52], dark=[62,56,34], alg=[74,112,40], seed=H.s<0?11:29, MF=new Float32Array(lw*lh).fill(-1), MX=new Float32Array(lw*lh), MY=new Float32Array(lw*lh);
   for(let j=0;j<lh;j++){ const v=(j+0.5)/lh;
     for(let i=0;i<lw;i++){ const u=(i+0.5)/lw, x=XMIN+u*XSPAN, h=H.ht.at(u,v), k=(j*lw+i)*4, depth=TD-h;
-      let c=h<TD?af:top, r=c[0], gg=c[1], b=c[2];
+      let c=h<T_SC?af:top, r=c[0], gg=c[1], b=c[2];   /* antifouling red right up to the 13.3 m draught mark */
       if(depth>0&&F.slime>0){ const X=x*0.9+seed, Y=v*30, f=clamp(depth/0.15,0,1)*(1.15-0.35*clamp(x/L,0,1))*(h<0.3?0.8:1);
         const n1=fbm(X,Y), n2=fbm(X*0.3+3,Y*0.3+8), sl=F.slime*f*(FOUL_LEVEL===1?clamp((n1-0.32)*2.4,0,0.85):clamp(0.3+0.75*n1*(0.6+0.8*n2),0,0.95));   // rating 1: patchy, paint shows through
         r+=(slime[0]-r)*sl; gg+=(slime[1]-gg)*sl; b+=(slime[2]-b)*sl;
