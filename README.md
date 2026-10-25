@@ -1,1 +1,1 @@
-
+The Vessel Planner estimates hull-cleaning times and resource requirements based on operational variables, assigned Hullbot resources, and the specific dimensions of each vessel. Through real-time simulation using scaled vessel models, it provides tailored operational insights to support efficient resource planning and quickly assess our capacity to deliver on a contract.
