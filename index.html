@@ -577,6 +577,9 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
               <label class="switch" id="simLiveRow"><input type="checkbox" id="simLive" checked>Live metrics beside the view while it runs</label>
             </div>
             <div class="calc" id="simStat"></div>
+            <div class="sim-row" style="margin-top:14px"><button type="button" id="seawolfBtn" title="Open the Seawolf Simulator to practise driving and cleaning">Seawolf</button></div>
+            <script>document.getElementById('seawolfBtn').addEventListener('click',function(){ var h=location.hostname;   /* on GitHub the simulator sits beside this page; on claude.ai open its artifact */
+              window.open((/claude|anthropic/.test(h)||(!h&&location.protocol!=='file:'))?'https://claude.ai/artifact/Vv97A8kQ6ERxWTapxSrPrb':'seawolf-simulator.html','_blank','noopener'); });</script>
           </div>
         </div>
       </details>
