@@ -214,6 +214,18 @@ button{font:inherit;color:inherit;}
 .plan-in label{justify-content:flex-end;}
 .plan-basis{display:block;margin-bottom:6px;}
 .plan-ref{margin:3px 0 0;font-size:11.5px;color:var(--ink-soft);}
+.fguide-h{font-size:11.5px;font-weight:600;color:var(--ink);margin:9px 0 2px;}
+.fguide{width:100%;border-collapse:collapse;font-size:11px;color:var(--ink);}
+.fguide th{font-weight:600;text-align:left;color:var(--ink-soft);padding:3px 4px;border-bottom:1px solid rgba(127,127,127,.35);white-space:nowrap;}
+.fguide td{padding:4px;border-bottom:1px solid rgba(127,127,127,.15);vertical-align:top;}
+.fguide td.num{white-space:nowrap;}
+.fguide tr.on td{background:rgba(127,127,127,.14);}
+.fguide .fg-d{color:var(--ink-soft);}
+.fguide .fg-s{font-size:10.5px;color:var(--ink-soft);margin-top:1px;}
+#fGuide{overflow-x:auto;}
+.fguide button{font:inherit;font-size:10.5px;padding:1px 7px;border:1px solid rgba(127,127,127,.5);border-radius:4px;background:transparent;color:var(--ink);cursor:pointer;}
+.fguide button:hover{background:rgba(127,127,127,.15);}
+.fguide-n{font-size:10.5px;color:var(--ink-soft);margin:4px 0 0;}
 .plan-basis label{display:flex;flex-direction:column;justify-content:flex-end;gap:2px;font-size:12px;color:var(--ink-soft);min-width:0;}
 .plan-basis select,.plan-basis input{font:inherit;font-size:13.5px;color:var(--ink);background:var(--surface-2);border:1px solid var(--rule);border-radius:6px;padding:4px 6px;width:100%;min-width:0;}
 .plan-basis.track label:last-child{opacity:.45;}
@@ -522,12 +534,13 @@ input[type=range],.zsel input,.plan-chk input{accent-color:var(--accent);}
                 <label>Window, h<input id="pWin" type="number" min="1" max="48" step="0.5" value="8"></label>
               </div></div>
             <div class="grp"><div class="grp-h">Cleaning</div>
-              <div class="plan-in c3">
+              <div class="plan-in c4">
                 <label title="Area one robot cleans per minute. Starts at 5. For comparison, actual Queen of Oak Bay cleans averaged 1.01 (0.988 min/m² per bot, including access, driving on and off and battery-swap overhead).">Rate, m²/min per robot<input id="pRate" type="number" min="0.1" max="30" step="0.01" value="5"></label>
+                <label title="The same rate as the speed the robot moves along its cleaning lanes: rate divided by lane spacing. Change either; the other follows.">Speed, m/s<input id="pSpeedMs" type="number" min="0.005" max="2" step="0.01" value="0.24"></label>
                 <label title="Spacing between cleaning lanes on the track">Lane spacing, m<input id="simLane" type="number" min="0.1" max="1" step="0.05" value="0.35"></label>
                 <label title="Contingency added to the cleaning time">Margin, %<input id="pCont" type="number" min="0" max="100" step="5" value="10"></label>
               </div>
-              <p class="plan-ref" id="pRef"></p></div>
+              <p class="plan-ref" id="pRef"></p><div id="fGuide"></div></div>
             <div class="grp"><div class="grp-h">Site times, minutes</div>
               <div class="plan-in c3">
                 <label title="Laptops, case unpack, lights, robot setup">Setup<input id="pSetup" type="number" min="0" max="600" step="5" value="40"></label>
@@ -2641,8 +2654,10 @@ let planSig='';
 function updatePlan(force){
   const out=$('planOut'); if(!out) return;
   const P=planInputs(), sig=JSON.stringify([P,SIM.speed,SIM.lane,SIM.runs.map(r=>[r.key,Math.round(r.cleanLen)])]);
-  const rKn=P.rate/SIM.lane/60/0.514444;      // the rate as a speed along the lanes
-  $('pRef').innerHTML=`<b>${P.rate.toFixed(2)} m²/min &amp; ${rKn.toFixed(2)} knots</b> per robot at ${SIM.lane.toFixed(2)} m lanes. Fleet rate (Queen of Oak Bay cleans): 1.01. Ideal track at ${(SIM.speed/0.514444).toFixed(1)} kn: ${(SIM.speed*SIM.lane*60).toFixed(1)}.`;
+  const rKn=P.rate/SIM.lane/60/0.514444, rMs=P.rate/SIM.lane/60;      // the rate as a speed along the lanes
+  { const e=$('pSpeedMs'); if(e&&document.activeElement!==e) e.value=rMs.toFixed(3); }
+  renderFoulGuide(rMs);
+  $('pRef').innerHTML=`<b>${P.rate.toFixed(2)} m²/min &amp; ${rMs.toFixed(2)} m/s (${rKn.toFixed(2)} knots)</b> per robot at ${SIM.lane.toFixed(2)} m lanes. Fleet rate (Queen of Oak Bay cleans): 1.01. Ideal track at ${SIM.speed.toFixed(2)} m/s (${(SIM.speed/0.514444).toFixed(1)} kn): ${(SIM.speed*SIM.lane*60).toFixed(1)}.`;
   if(!force&&sig===planSig) return; planSig=sig;
   if(!SIM.runs.length){ out.innerHTML='<p class="calc-empty">Tick zones in the clean track calculator to plan the operation.</p>'; SIM.tl=null; ensureBots(0); renderBatteries(null,P); return; }
   const S=planSchedule(P); if(S.error){ out.innerHTML=`<p class="calc-warn">${S.error}</p>`; SIM.tl=null; ensureBots(0); renderBatteries(null,P); return; }
@@ -2672,7 +2687,7 @@ function updatePlan(force){
     (short?`<p class="pshort">Not complete in ${A} window${pl(A)}: ${more} more window${pl(more)} needed, adding ${fmtH(extraTime)}. The ${A} available window${pl(A)} cover about ${Math.round(doneA*100)}% of the clean in ${fmtH(onsiteA)} on site.</p>`
       :(N>1?`<p class="pover">Fits in the ${A} available windows. Splitting it over ${N} windows adds ${fmtH(extra)} of setup and pack-up, plus a relaunch for each zone carried over.</p>`:''))+
     `<div class="dash-h">Breakdown</div><div class="tiles">`+
-      tile('Rate',P.rate.toFixed(2)+'<small> m²/min</small>',`&amp; ${(P.rate/SIM.lane/60/0.514444).toFixed(2)} kn per robot; ${(P.rate*P.robots).toFixed(2)} m²/min with ${P.robots}`)+
+      tile('Rate',P.rate.toFixed(2)+'<small> m²/min</small>',`&amp; ${(P.rate/SIM.lane/60).toFixed(2)} m/s (${(P.rate/SIM.lane/60/0.514444).toFixed(2)} kn) per robot; ${(P.rate*P.robots).toFixed(2)} m²/min with ${P.robots}`)+
       tile('Cleaning',fmtH(clean),`robot time +${Math.round(P.cont*100)}%`)+
       tile('Photos',S.photos,`${fmtH(S.photoH)} pre and post clean`)+
       tile('Overhead',fmtH(over),`setup and pack-up, ${Math.round(over/onsite*100)}% of on site`)+
@@ -4495,12 +4510,27 @@ $('dpSel').addEventListener('change',e=>{ const c=e.target; if(c.tagName!=='INPU
   const on=[...document.querySelectorAll('#dpSel input')].filter(i=>i.checked); if(!on.length){ c.checked=true; return; }
   DP_ON.clear(); on.forEach(i=>DP_ON.add(i.value)); dpLabels(); placePods(); if(SIM.runs.length){ SIM.prev=simStats(); rebuildSimKeep(); } else updateSimUI(); });
 $('simSpd').addEventListener('change',e=>{ if(SIM.runs.length) SIM.prev=simStats(); const kn=clamp(parseFloat(e.target.value)||1,0.1,6); e.target.value=kn; SIM.speed=kn*0.514444; updateSimUI(); });   // knots to m/s
-$('simLane').addEventListener('change',e=>{ if(SIM.runs.length) SIM.prev=simStats(); SIM.lane=clamp(parseFloat(e.target.value)||0.35,0.1,1); e.target.value=SIM.lane; rebuildSimKeep(); });
+$('simLane').addEventListener('change',e=>{ if(SIM.runs.length) SIM.prev=simStats(); SIM.lane=clamp(parseFloat(e.target.value)||0.35,0.1,1); e.target.value=SIM.lane; rebuildSimKeep(); updatePlan(); });
 $('simFollow').addEventListener('change',e=>{ SIM.follow=e.target.checked; });
 ['pPhoto','pAreas','pNiche','pPerDp','pChargers','pRobots','pWins','pWin','pSetup','pPack','pRelaunch','pBatt','pSwap','pCharge','pCont'].forEach(id=>$(id).addEventListener('input',()=>updatePlan()));
 ['pStar','pChg','pDpSwap'].forEach(id=>$(id).addEventListener('change',()=>updatePlan()));
 $('sbOn').addEventListener('change',updateSeabed); $('sbDepth').addEventListener('input',updateSeabed); $('sbType').addEventListener('change',updateSeabed);
+// Recommended cleaning speed by Hullbot fouling rating: light fouling runs faster, up to the grip limit in Medium (about 0.35 m/s
+// driving ahead); heavy fouling runs slower for scrubbing time per square metre, at Standard pressure (H6 performance reference).
+const FOUL_GUIDE=[
+  {r:0,name:'Clean or light biofilm',lo:0.30,hi:0.35,hold:'Medium',rpm:'200–300'},
+  {r:1,name:'Slime layer',lo:0.25,hi:0.30,hold:'Medium',rpm:'300'},
+  {r:2,name:'Slime, 1–15% macrofouling',lo:0.20,hi:0.25,hold:'Medium',rpm:'300'},
+  {r:3,name:'16–40% macrofouling',lo:0.12,hi:0.18,hold:'Standard (Heavy)',rpm:'300–400'},
+  {r:4,name:'41–100% macrofouling',lo:0.10,hi:0.15,hold:'Standard (Heavy)',rpm:'300–400'}];
+function renderFoulGuide(cur){ const box=$('fGuide'); if(!box) return; const ln=SIM.lane, rate=v=>(v*ln*60).toFixed(1);
+  box.innerHTML=`<div class="fguide-h">Recommended speed by fouling rating</div><table class="fguide"><thead><tr><th>Fouling · settings</th><th>Speed, m/s</th><th>m²/min</th><th></th></tr></thead><tbody>`+
+    FOUL_GUIDE.map(g=>{ const mid=(g.lo+g.hi)/2, on=cur>=g.lo-0.004&&cur<=g.hi+0.004;
+      return `<tr class="${on?'on':''}"><td><b>${g.r}</b> <span class="fg-d">${g.name}</span><div class="fg-s">${g.hold} · ${g.rpm} RPM</div></td><td class="num">${g.lo.toFixed(2)}–${g.hi.toFixed(2)}</td><td class="num">${rate(g.lo)}–${rate(g.hi)}</td><td><button type="button" data-v="${mid.toFixed(3)}" title="Plan at ${mid.toFixed(2)} m/s (${rate(mid)} m²/min)">Use</button></td></tr>`; }).join('')+
+    `</tbody></table><p class="fguide-n">Rates at ${ln.toFixed(2)} m lanes, cleaning time only (no access, driving on and off or battery swaps). Brushes turning outwards. Light fouling runs fast within Medium's grip limit of about 0.35 m/s; heavy fouling runs slow for scrubbing time. If live brush RPM sags more than 20% below the set RPM, slow down rather than raising RPM.</p>`; }
+$('fGuide').addEventListener('click',e=>{ const b=e.target.closest('button[data-v]'); if(!b) return; const s=$('pSpeedMs'); s.value=b.dataset.v; s.dispatchEvent(new Event('input')); });
 $('pRate').addEventListener('input',()=>updatePlan());
+$('pSpeedMs').addEventListener('input',e=>{ const s=parseFloat(e.target.value); if(!(s>0)) return; const r=Math.min(30,Math.max(0.1,s*SIM.lane*60)); $('pRate').value=r.toFixed(2); updatePlan(); });
 updateSimUI();
 
 if(mq.matches) setSheet(false);
